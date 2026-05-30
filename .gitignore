@@ -1,23 +1,11 @@
-.DS_Store
 node_modules
-/dist
-
-# local env files
+.turbo
+.next
+dist
 .env.local
 .env.*.local
-
-# Log files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Editor directories and files
+*.log
+.DS_Store
 .idea
 .vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.superpowers/
+.superpowers
