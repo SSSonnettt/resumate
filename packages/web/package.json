@@ -10,11 +10,13 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-resume/agent-harness": "workspace:*",
     "@ai-resume/shared": "workspace:*",
     "immer": "^11.1.8",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "zod": "^3.25.76",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
