@@ -1,0 +1,13 @@
+{
+  "id": "elegant-serif",
+  "name": "优雅衬线",
+  "defaults": {
+    "templateId": "elegant-serif",
+    "primaryColor": "#8b4513",
+    "fontFamily": "serif",
+    "fontSize": "medium",
+    "spacing": "loose",
+    "headerLayout": "centered",
+    "sectionDivider": "space"
+  }
+}
