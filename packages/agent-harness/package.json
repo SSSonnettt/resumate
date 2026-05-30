@@ -1,0 +1,19 @@
+{
+  "name": "@ai-resume/agent-harness",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-resume/shared": "workspace:*",
+    "@anthropic-ai/sdk": "^0.36.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
