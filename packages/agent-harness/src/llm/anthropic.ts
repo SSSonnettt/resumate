@@ -3,6 +3,28 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import type { z } from "zod";
 import type { LLMProvider, ChatMessage } from "./types";
 
+/** 从 content blocks 中提取第一个文本块 */
+function extractText(
+  blocks: Array<{ type: string; text?: string }>,
+): string {
+  if (!blocks || blocks.length === 0) {
+    throw new Error("AI 返回了空响应，请检查 API Key 是否正确");
+  }
+
+  const textBlock = blocks.find((b) => b.type === "text");
+  if (!textBlock) {
+    const types = blocks.map((b) => b.type).join(", ");
+    throw new Error(`AI 返回了非预期的内容类型: ${types}，请重试`);
+  }
+
+  const text = textBlock.text;
+  if (!text || text.trim().length === 0) {
+    throw new Error("AI 返回了空文本，请重试");
+  }
+
+  return text;
+}
+
 export class AnthropicProvider implements LLMProvider {
   private client: Anthropic;
 
@@ -77,23 +99,9 @@ export class AnthropicProvider implements LLMProvider {
       })),
     });
 
-    // 安全提取响应文本
-    const contentBlocks = response.content;
-    if (!contentBlocks || contentBlocks.length === 0) {
-      throw new Error("AI 返回了空响应，请检查 API Key 是否正确");
-    }
-
-    const firstBlock = contentBlocks[0];
-    if (firstBlock.type !== "text") {
-      throw new Error(
-        `AI 返回了非预期的内容类型: ${firstBlock.type}，请重试`,
-      );
-    }
-
-    const text = firstBlock.text;
-    if (!text || text.trim().length === 0) {
-      throw new Error("AI 返回了空文本，请重试");
-    }
+    const text = extractText(
+      response.content as Array<{ type: string; text?: string }>,
+    );
 
     // 提取 JSON
     const jsonMatch = text.match(/\{[\s\S]*\}/);
