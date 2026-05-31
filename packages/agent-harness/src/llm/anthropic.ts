@@ -1,4 +1,6 @@
 import { Anthropic } from "@anthropic-ai/sdk";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import type { z } from "zod";
 import type { LLMProvider, ChatMessage } from "./types";
 
 export class AnthropicProvider implements LLMProvider {
@@ -12,7 +14,7 @@ export class AnthropicProvider implements LLMProvider {
 
   async streamChat(
     params: { messages: ChatMessage[]; temperature?: number },
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
   ): Promise<string> {
     let full = "";
     const stream = await this.client.messages.create({
@@ -43,16 +45,21 @@ export class AnthropicProvider implements LLMProvider {
 
   async generateStructured<T>(params: {
     messages: ChatMessage[];
-    schema: { _type: unknown };
+    schema: z.ZodType<unknown>;
     temperature?: number;
   }): Promise<T> {
-    const schemaStr = JSON.stringify(params.schema, null, 2);
+    // 将 Zod schema 转换为标准 JSON Schema
+    const jsonSchema = zodToJsonSchema(params.schema, {
+      $refStrategy: "none",
+    });
+    const schemaStr = JSON.stringify(jsonSchema, null, 2);
+
     const messages = [
       ...params.messages,
       {
         role: "assistant" as const,
         content:
-          'I will respond with valid JSON only, following this schema:\n```json\n' +
+          "I will respond with valid JSON only, following this schema:\n```json\n" +
           schemaStr +
           "\n```",
       },
@@ -62,16 +69,40 @@ export class AnthropicProvider implements LLMProvider {
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
       temperature: params.temperature ?? 0.2,
-      system: "You are a JSON-only API. Always respond with valid JSON matching the provided schema. No other text.",
+      system:
+        "You are a JSON-only API. Always respond with valid JSON matching the provided schema. No other text.",
       messages: messages.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
     });
 
-    const text = (response.content[0] as { text: string }).text;
+    // 安全提取响应文本
+    const contentBlocks = response.content;
+    if (!contentBlocks || contentBlocks.length === 0) {
+      throw new Error("AI 返回了空响应，请检查 API Key 是否正确");
+    }
+
+    const firstBlock = contentBlocks[0];
+    if (firstBlock.type !== "text") {
+      throw new Error(
+        `AI 返回了非预期的内容类型: ${firstBlock.type}，请重试`,
+      );
+    }
+
+    const text = firstBlock.text;
+    if (!text || text.trim().length === 0) {
+      throw new Error("AI 返回了空文本，请重试");
+    }
+
+    // 提取 JSON
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    const json = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
-    return json as T;
+    if (!jsonMatch) {
+      throw new Error(
+        `AI 返回的内容不包含 JSON，请重试。内容前200字符: ${text.slice(0, 200)}`,
+      );
+    }
+
+    return JSON.parse(jsonMatch[0]) as unknown as T;
   }
 }
