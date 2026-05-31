@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: "AI 对话驱动的开源简历构建工具",
 };
 
+import { ApiKeyDialog } from "@/components/api-key-dialog";
+
 export default function RootLayout({
   children,
 }: {
@@ -13,7 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
-      <body className="min-h-screen bg-gray-50">{children}</body>
+      <body className="min-h-screen bg-gray-50">
+        {children}
+        <ApiKeyDialog />
+      </body>
     </html>
   );
 }
