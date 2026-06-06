@@ -1,4 +1,4 @@
-import type { Module, Theme } from "@ai-resume/shared";
+import type { Module, Theme } from "@resumate/shared";
 import { HeaderRenderer } from "./header-renderer";
 import { WorkExperienceRenderer } from "./work-exp-renderer";
 import { EducationRenderer } from "./education-renderer";
@@ -17,21 +17,21 @@ export function ModuleRenderer({ module, theme }: Props) {
 
   switch (module.type) {
     case "header":
-      return <HeaderRenderer data={module.data as never} theme={theme} />;
+      return <HeaderRenderer data={module.data} theme={theme} />;
     case "work-experience":
       return (
-        <WorkExperienceRenderer data={module.data as never} theme={theme} />
+        <WorkExperienceRenderer data={module.data} theme={theme} />
       );
     case "education":
-      return <EducationRenderer data={module.data as never} theme={theme} />;
+      return <EducationRenderer data={module.data} theme={theme} />;
     case "skills":
-      return <SkillsRenderer data={module.data as never} theme={theme} />;
+      return <SkillsRenderer data={module.data} theme={theme} />;
     case "summary":
-      return <SummaryRenderer data={module.data as never} />;
+      return <SummaryRenderer data={module.data} />;
     case "projects":
-      return <ProjectsRenderer data={module.data as never} theme={theme} />;
+      return <ProjectsRenderer data={module.data} theme={theme} />;
     case "custom":
-      return <CustomRenderer data={module.data as never} />;
+      return <CustomRenderer data={module.data} />;
     default:
       return null;
   }

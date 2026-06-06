@@ -1,15 +1,17 @@
 {
-  "name": "ai-resume-builder",
+  "name": "resumate",
   "private": true,
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
-    "check-types": "turbo check-types"
+    "check-types": "turbo check-types",
+    "test": "turbo test"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.4"
   },
   "packageManager": "pnpm@10.28.0"
 }

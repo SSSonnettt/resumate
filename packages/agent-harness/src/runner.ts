@@ -1,17 +1,26 @@
-import type { LLMProvider } from "./llm";
-import type { HarnessEvent } from "@ai-resume/shared";
-import { ToolRegistry } from "./tool-registry";
+import type { Resume, HarnessEvent } from "@resumate/shared";
 import type { z } from "zod";
+import type { LLMProvider, ChatMessage } from "./llm";
+import { ToolRegistry } from "./tool-registry";
+
+export interface StepRuntime {
+  context: Record<string, unknown>;
+  stepResults: Record<string, unknown>;
+}
+
+export type RuntimeValue<T> = T | ((runtime: StepRuntime) => T);
 
 export interface PlanStep {
   id: string;
   type: "tool" | "chat" | "structured" | "compose";
+  description?: string;
   dependsOn?: string[];
   tool?: string;
-  toolArgs?: Record<string, unknown>;
-  systemPrompt?: string;
-  userPromptTemplate?: string;
+  toolArgs?: RuntimeValue<Record<string, unknown>>;
+  systemPrompt?: RuntimeValue<string>;
+  userPromptTemplate?: RuntimeValue<string>;
   schema?: z.ZodType<unknown>;
+  compose?: RuntimeValue<Resume>;
 }
 
 export interface Plan {
@@ -30,92 +39,104 @@ export class AgentRunner {
 
   async *execute(
     plan: Plan,
-    context: Record<string, unknown> = {}
+    context: Record<string, unknown> = {},
   ): AsyncGenerator<HarnessEvent> {
     yield { type: "plan:start", planId: plan.id };
 
-    const stepResults = new Map<string, unknown>();
+    const stepResults: Record<string, unknown> = {};
 
     for (const step of plan.steps) {
-      // Check dependencies
-      if (step.dependsOn) {
-        for (const dep of step.dependsOn) {
-          if (!stepResults.has(dep)) {
-            yield {
-              type: "plan:error",
-              stepId: step.id,
-              error: `依赖步骤 ${dep} 未完成`,
-            };
-            return;
-          }
-        }
+      const missingDep = step.dependsOn?.find((dep) => !(dep in stepResults));
+      if (missingDep) {
+        yield {
+          type: "plan:error",
+          stepId: step.id,
+          error: `依赖步骤 ${missingDep} 未完成`,
+        };
+        return;
       }
 
       yield {
         type: "step:start",
         stepId: step.id,
-        description: `执行: ${step.id}`,
+        description: step.description ?? `执行: ${step.id}`,
       };
+
+      const runtime = { context, stepResults };
 
       try {
         switch (step.type) {
           case "tool": {
+            if (!step.tool) {
+              throw new Error(`步骤 ${step.id} 缺少 tool`);
+            }
+            const args = resolveRuntimeValue(step.toolArgs, runtime) ?? {};
             yield {
               type: "step:tool_call",
               stepId: step.id,
-              tool: step.tool!,
-              args: step.toolArgs || {},
+              tool: step.tool,
+              args,
             };
-            const result = await this.registry.execute(
-              step.tool!,
-              step.toolArgs || {}
-            );
-            stepResults.set(step.id, result);
+
+            const result = await this.registry.execute(step.tool, args);
+            stepResults[step.id] = result;
             yield { type: "step:done", stepId: step.id, result };
             break;
           }
 
           case "chat": {
-            const systemMsg = step.systemPrompt || "You are a helpful career advisor.";
             let fullText = "";
-            const messages = [
-              { role: "system" as const, content: systemMsg },
-              { role: "user" as const, content: step.userPromptTemplate || "Let's begin." },
-            ];
+            const messages = createMessages(step, runtime, {
+              fallbackSystem: "你是一位专业的中文求职顾问。",
+              fallbackUser: "请继续。",
+            });
 
             await this.provider.streamChat({ messages }, (chunk) => {
               fullText += chunk;
             });
-            stepResults.set(step.id, { text: fullText });
-            yield { type: "step:done", stepId: step.id, result: { text: fullText } };
+
+            // Provider callbacks are sync-only, so emit the aggregated chunk once.
+            if (fullText) {
+              yield { type: "step:chunk", stepId: step.id, text: fullText };
+            }
+
+            const result = { text: fullText };
+            stepResults[step.id] = result;
+            yield { type: "step:done", stepId: step.id, result };
             break;
           }
 
           case "structured": {
-            const schema = step.schema!;
-            const messages = [
-              { role: "system" as const, content: step.systemPrompt || "Generate the resume content." },
-              { role: "user" as const, content: step.userPromptTemplate || JSON.stringify(context) },
-            ];
+            if (!step.schema) {
+              throw new Error(`步骤 ${step.id} 缺少 schema`);
+            }
+            const messages = createMessages(step, runtime, {
+              fallbackSystem: "根据用户信息生成结构化简历 JSON。",
+              fallbackUser: JSON.stringify(context),
+            });
 
             const result = await this.provider.generateStructured({
               messages,
-              schema,
+              schema: step.schema,
             });
-            stepResults.set(step.id, result);
+            stepResults[step.id] = result;
             yield { type: "step:done", stepId: step.id, result };
             break;
           }
 
           case "compose": {
-            const allResults: Record<string, unknown> = {};
-            for (const [key, value] of stepResults) {
-              allResults[key] = value;
+            const resume =
+              resolveRuntimeValue(step.compose, runtime) ??
+              (stepResults.generate as Resume | undefined) ??
+              (context.resume as Resume | undefined);
+
+            if (!resume) {
+              throw new Error("没有可输出的简历结果");
             }
-            yield {
-              type: "plan:done",
-              resume: (context.resume || allResults) as unknown as never,
-            } as HarnessEvent;
+
+            stepResults[step.id] = resume;
+            yield { type: "step:done", stepId: step.id, result: resume };
+            yield { type: "plan:done", resume };
             break;
           }
         }
@@ -129,4 +150,34 @@ export class AgentRunner {
       }
     }
   }
+}
+
+function createMessages(
+  step: PlanStep,
+  runtime: StepRuntime,
+  fallback: { fallbackSystem: string; fallbackUser: string },
+): ChatMessage[] {
+  return [
+    {
+      role: "system",
+      content:
+        resolveRuntimeValue(step.systemPrompt, runtime) ??
+        fallback.fallbackSystem,
+    },
+    {
+      role: "user",
+      content:
+        resolveRuntimeValue(step.userPromptTemplate, runtime) ??
+        fallback.fallbackUser,
+    },
+  ];
+}
+
+function resolveRuntimeValue<T>(
+  value: RuntimeValue<T> | undefined,
+  runtime: StepRuntime,
+): T | undefined {
+  return typeof value === "function"
+    ? (value as (runtime: StepRuntime) => T)(runtime)
+    : value;
 }

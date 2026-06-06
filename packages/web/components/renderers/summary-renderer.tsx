@@ -1,4 +1,4 @@
-import type { SummaryData } from "@ai-resume/shared";
+import type { SummaryData } from "@resumate/shared";
 
 export function SummaryRenderer({ data }: { data: SummaryData }) {
   if (!data.text) return null;

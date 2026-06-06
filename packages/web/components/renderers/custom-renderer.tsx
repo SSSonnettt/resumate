@@ -1,4 +1,4 @@
-import type { CustomData } from "@ai-resume/shared";
+import type { CustomData } from "@resumate/shared";
 
 export function CustomRenderer({ data }: { data: CustomData }) {
   if (!data.content) return null;

@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  transpilePackages: ["@ai-resume/shared"],
+  transpilePackages: ["@resumate/shared"],
 };
 
 export default nextConfig;

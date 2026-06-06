@@ -1,7 +1,7 @@
 "use client";
 import { useResumeStore } from "@/lib/stores/resume-store";
-import type { ModuleType } from "@ai-resume/shared";
-import { Plus, Trash2 } from "lucide-react";
+import type { ModuleType } from "@resumate/shared";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 
 const moduleTypes: { type: ModuleType; label: string }[] = [
   { type: "header", label: "头部" },
@@ -18,21 +18,27 @@ export function ModulePanel() {
 
   return (
     <div className="p-4">
-      <h3 className="font-semibold mb-3">模块</h3>
+      <div className="mb-4">
+        <p className="text-xs font-medium text-slate-400">STRUCTURE</p>
+        <h3 className="mt-1 text-sm font-semibold text-slate-900">简历模块</h3>
+      </div>
 
-      {/* 当前模块列表 */}
-      <div className="space-y-1 mb-4">
-        {resume.modules.map((mod) => (
+      <div className="mb-5 space-y-2">
+        {resume.modules.map((module) => (
           <div
-            key={mod.id}
-            className="flex items-center justify-between text-sm py-1 px-2 rounded hover:bg-gray-100"
+            key={module.id}
+            className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-2 py-2 text-sm"
           >
-            <span>
-              {moduleTypes.find((t) => t.type === mod.type)?.label || mod.type}
+            <span className="flex min-w-0 items-center gap-2 text-slate-700">
+              <GripVertical size={14} className="shrink-0 text-slate-300" />
+              <span className="truncate">
+                {moduleTypes.find((item) => item.type === module.type)?.label ||
+                  module.type}
+              </span>
             </span>
             <button
-              onClick={() => removeModule(mod.id)}
-              className="text-red-400 hover:text-red-600 transition-colors"
+              onClick={() => removeModule(module.id)}
+              className="rounded p-1 text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-600"
               title="删除模块"
             >
               <Trash2 size={14} />
@@ -40,21 +46,22 @@ export function ModulePanel() {
           </div>
         ))}
         {resume.modules.length === 0 && (
-          <p className="text-xs text-gray-400 py-2">暂无模块，从下方添加</p>
+          <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-sm text-slate-400">
+            暂无模块，从下方添加。
+          </p>
         )}
       </div>
 
-      {/* 添加模块 */}
-      <h4 className="text-xs text-gray-500 mb-2">添加模块</h4>
-      <div className="space-y-1">
-        {moduleTypes.map((mt) => (
+      <h4 className="mb-2 text-xs font-medium text-slate-500">添加模块</h4>
+      <div className="grid grid-cols-1 gap-2">
+        {moduleTypes.map((moduleType) => (
           <button
-            key={mt.type}
-            onClick={() => addModule(mt.type)}
-            className="flex items-center gap-2 text-sm w-full px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+            key={moduleType.type}
+            onClick={() => addModule(moduleType.type)}
+            className="flex h-9 w-full items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
           >
             <Plus size={14} />
-            {mt.label}
+            {moduleType.label}
           </button>
         ))}
       </div>

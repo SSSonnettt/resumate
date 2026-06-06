@@ -1,4 +1,4 @@
-import type { EducationData, Theme } from "@ai-resume/shared";
+import type { EducationData, Theme } from "@resumate/shared";
 
 export function EducationRenderer({
   data,

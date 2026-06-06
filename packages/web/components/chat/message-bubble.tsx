@@ -1,4 +1,4 @@
-import type { ChatMessage } from "@ai-resume/shared";
+import type { ChatMessage } from "@resumate/shared";
 import Link from "next/link";
 
 /** 简单 Markdown 链接解析：[text](url) */

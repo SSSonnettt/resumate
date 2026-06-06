@@ -1,4 +1,4 @@
-import type { Theme } from "@ai-resume/shared";
+import type { Theme } from "@resumate/shared";
 
 const fontSizeMap = { small: "12px", medium: "14px", large: "16px" };
 const spacingMap = { compact: "4px", normal: "8px", loose: "16px" };

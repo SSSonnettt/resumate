@@ -1,3 +1,5 @@
+import { resumeSchema } from "@resumate/shared";
+
 export interface ToolFn {
   (args: Record<string, unknown>): Promise<Record<string, unknown>>;
 }
@@ -39,14 +41,12 @@ export function createBuiltInTools(): ToolRegistry {
   });
 
   registry.register("validateResume", async (args) => {
-    const resume = args.resume as Record<string, unknown>;
+    const resume = resumeSchema.parse(args.resume);
     const issues: string[] = [];
-    if (!resume.modules || (resume.modules as unknown[]).length === 0) {
+    if (resume.modules.length === 0) {
       issues.push("简历没有任何模块");
     }
-    const headerMod = (resume.modules as Array<{ type: string; data: Record<string, unknown> }>)?.find(
-      (m) => m.type === "header"
-    );
+    const headerMod = resume.modules.find((m) => m.type === "header");
     if (!headerMod) {
       issues.push("缺少头部模块（姓名、联系方式）");
     } else {

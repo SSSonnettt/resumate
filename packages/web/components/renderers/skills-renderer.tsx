@@ -1,4 +1,4 @@
-import type { SkillsData, Theme } from "@ai-resume/shared";
+import type { SkillsData, Theme } from "@resumate/shared";
 
 export function SkillsRenderer({
   data,

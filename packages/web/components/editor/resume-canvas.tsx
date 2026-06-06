@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
-import type { Module, Theme } from "@ai-resume/shared";
+import type { Module, Theme } from "@resumate/shared";
 
 function SortableModule({
   module,
@@ -38,9 +38,9 @@ function SortableModule({
       <button
         {...attributes}
         {...listeners}
-        className="absolute -left-6 top-2 opacity-0 group-hover:opacity-100 cursor-grab transition-opacity"
+        className="absolute -left-8 top-2 cursor-grab rounded-md bg-white p-1 opacity-0 shadow-sm ring-1 ring-slate-200 transition-opacity group-hover:opacity-100"
       >
-        <GripVertical size={16} className="text-gray-400" />
+        <GripVertical size={16} className="text-slate-400" />
       </button>
       <ModuleRenderer module={module} theme={theme} />
     </div>
@@ -66,11 +66,11 @@ export function ResumeCanvas() {
 
   return (
     <div
-      className="bg-white shadow-lg mx-auto p-8"
+      className="mx-auto bg-white p-10 shadow-sm ring-1 ring-slate-200"
       style={{ width: "820px", minHeight: "1160px" }}
     >
       {resume.modules.length === 0 ? (
-        <p className="text-gray-300 text-center pt-20">
+        <p className="pt-20 text-center text-slate-300">
           从左侧添加模块开始编辑简历
         </p>
       ) : (

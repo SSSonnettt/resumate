@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+  body.print-mode {
+    background: white;
+  }
+
+  body.print-mode header,
+  body.print-mode aside {
+    display: none;
+  }
+
+  body.print-mode #resume-preview {
+    width: 100% !important;
+    min-height: auto !important;
+  }
+}

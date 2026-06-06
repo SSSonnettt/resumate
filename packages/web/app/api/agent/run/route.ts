@@ -3,74 +3,107 @@ import {
   AgentRunner,
   AnthropicProvider,
   createBuiltInTools,
-} from "@ai-resume/agent-harness";
-import type { Plan } from "@ai-resume/agent-harness";
-import type { Resume, HarnessEvent } from "@ai-resume/shared";
+} from "@resumate/agent-harness";
+import type { Plan } from "@resumate/agent-harness";
+import {
+  normalizeResumeOrder,
+  resumeSchema,
+  type HarnessEvent,
+} from "@resumate/shared";
 import { z } from "zod";
 
-const ResumeModuleSchema = z.object({
-  id: z.string(),
-  type: z.enum([
-    "header",
-    "summary",
-    "work-experience",
-    "education",
-    "skills",
-    "projects",
-    "custom",
-  ]),
-  order: z.number(),
-  visible: z.boolean(),
-  data: z.record(z.unknown()),
+const runRequestSchema = z.object({
+  apiKey: z.string().optional(),
+  messages: z.array(
+    z.object({
+      role: z.enum(["user", "assistant", "system"]),
+      content: z.string(),
+    }),
+  ),
 });
 
-const ResumeSchema = z.object({
-  id: z.string(),
-  modules: z.array(ResumeModuleSchema),
-  theme: z.object({
-    templateId: z.string(),
-    primaryColor: z.string(),
-    fontFamily: z.enum(["sans", "serif", "kai"]),
-    fontSize: z.enum(["small", "medium", "large"]),
-    spacing: z.enum(["compact", "normal", "loose"]),
-  }),
-});
+const systemPrompt = [
+  "你是一个面向中文求职者的 AI 简历工作台。",
+  "你的任务是根据用户提供的目标岗位 JD 和个人经历，生成一份可直接投递的中文简历。",
+  "简历必须具体、克制、职业化，优先突出与 JD 匹配的经历、技能和项目。",
+  "不要编造公司、学校、证书、时间等关键事实；信息不足时使用空字符串或空数组。",
+  "输出必须严格符合 JSON Schema。",
+].join("\n");
 
-const resumeGenerationPlan: Plan = {
-  id: "resume-generation",
-  steps: [
-    { id: "classify", type: "tool", tool: "classifyIntent", toolArgs: {} },
-    {
-      id: "collect",
-      type: "chat",
-      dependsOn: ["classify"],
-      systemPrompt:
-        "你是一位专业的职业顾问。引导用户逐步提供简历所需信息：姓名和联系方式、工作经历、教育背景、技能、项目经历。每次只问一个模块，用户跳过也无妨。回答要简洁，每次只问一个问题。",
-      userPromptTemplate: "",
-    },
-    {
-      id: "generate",
-      type: "structured",
-      dependsOn: ["collect"],
-      schema: ResumeSchema,
-      systemPrompt:
-        "根据之前收集到的用户信息，生成完整的简历 JSON。严格遵循提供的 Schema。如果没有足够信息，用合理的默认值填充。",
-      userPromptTemplate: "",
-    },
-    {
-      id: "validate",
-      type: "tool",
-      dependsOn: ["generate"],
-      tool: "validateResume",
-      toolArgs: {},
-    },
-    { id: "present", type: "compose", dependsOn: ["validate"], toolArgs: {} },
-  ],
-};
+function createResumeGenerationPlan(messages: Array<{ role: string; content: string }>): Plan {
+  const lastMessage = messages.at(-1)?.content ?? "";
+  const userContext = JSON.stringify(messages, null, 2);
+
+  return {
+    id: "jd-tailored-resume-generation",
+    steps: [
+      {
+        id: "classify",
+        type: "tool",
+        description: "识别用户当前输入意图",
+        tool: "classifyIntent",
+        toolArgs: { input: lastMessage },
+      },
+      {
+        id: "collect",
+        type: "chat",
+        description: "整理已收集信息并提示下一步",
+        dependsOn: ["classify"],
+        systemPrompt:
+          "你是中文求职简历向导。根据对话判断是否已具备 JD、基础信息、工作经历、教育背景、技能、项目经历。回答必须简短：先说明已掌握什么，再只问一个最关键的缺失问题。如果信息已足够，告诉用户将生成定制简历。",
+        userPromptTemplate: userContext,
+      },
+      {
+        id: "generate",
+        type: "structured",
+        description: "生成岗位定制中文简历",
+        dependsOn: ["collect"],
+        schema: resumeSchema,
+        systemPrompt,
+        userPromptTemplate: [
+          "请基于以下对话生成一份中文简历 JSON。",
+          "模块建议顺序：header、summary、work-experience、projects、skills、education，可按信息完整度省略空模块之外的模块。",
+          "summary 要体现目标岗位匹配度；work-experience/project 描述使用结果导向的中文表达。",
+          "每个模块的 id 必须为稳定字符串；order 从 0 开始递增；visible 为 true。",
+          userContext,
+        ].join("\n\n"),
+      },
+      {
+        id: "validate",
+        type: "tool",
+        description: "校验简历结构",
+        dependsOn: ["generate"],
+        tool: "validateResume",
+        toolArgs: ({ stepResults }) => ({
+          resume: stepResults.generate,
+        }),
+      },
+      {
+        id: "present",
+        type: "compose",
+        description: "输出最终简历",
+        dependsOn: ["validate"],
+        compose: ({ stepResults }) =>
+          normalizeResumeOrder(resumeSchema.parse(stepResults.generate)),
+      },
+    ],
+  };
+}
 
 export async function POST(request: NextRequest) {
-  const { messages, apiKey } = await request.json();
+  const parsed = runRequestSchema.safeParse(await request.json());
 
+  if (!parsed.success) {
+    return new Response(
+      JSON.stringify({ error: "请求格式不正确", details: parsed.error.flatten() }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
+
+  const { messages, apiKey } = parsed.data;
   const provider = new AnthropicProvider(apiKey || undefined);
   const registry = createBuiltInTools();
   const runner = new AgentRunner(provider, registry);
@@ -79,49 +112,23 @@ export async function POST(request: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const plan = { ...resumeGenerationPlan };
-        const lastMsg = messages?.[messages.length - 1]?.content || "";
-        plan.steps[0]!.toolArgs = { input: lastMsg };
-        plan.steps[1]!.userPromptTemplate = JSON.stringify(messages);
+        const plan = createResumeGenerationPlan(messages);
 
-        // 收集步骤结果以便在 present 时提取 resume
-        const stepResults: Record<string, unknown> = {};
-
-        for await (const rawEvent of runner.execute(plan, { messages })) {
-          let event = rawEvent;
-
-          // 记录每个步骤的结果
-          if (
-            rawEvent.type === "step:done" &&
-            rawEvent.result
-          ) {
-            stepResults[rawEvent.stepId] = rawEvent.result;
-          }
-
-          // compose 步骤：从 generate 步骤的结果中提取真正的 Resume
-          if (rawEvent.type === "plan:done") {
-            const generated = stepResults["generate"] as Resume | undefined;
-            if (generated && generated.modules && generated.theme) {
-              event = {
-                type: "plan:done",
-                resume: generated,
-              };
-            }
-          }
-
-          const data = `data: ${JSON.stringify(event)}\n\n`;
-          controller.enqueue(encoder.encode(data));
+        for await (const event of runner.execute(plan, { messages })) {
+          controller.enqueue(encoder.encode(encodeSSE(event)));
         }
 
-        const done = `data: ${JSON.stringify({ type: "stream:done" })}\n\n`;
-        controller.enqueue(encoder.encode(done));
+        controller.enqueue(encoder.encode(encodeSSE({ type: "stream:done" })));
         controller.close();
       } catch (err) {
-        const error = `data: ${JSON.stringify({
-          type: "stream:error",
-          error: String(err),
-        })}\n\n`;
-        controller.enqueue(encoder.encode(error));
+        controller.enqueue(
+          encoder.encode(
+            encodeSSE({
+              type: "stream:error",
+              error: err instanceof Error ? err.message : String(err),
+            }),
+          ),
+        );
         controller.close();
       }
     },
@@ -134,4 +141,8 @@ export async function POST(request: NextRequest) {
       Connection: "keep-alive",
     },
   });
+}
+
+function encodeSSE(event: HarnessEvent | { type: "stream:done" } | { type: "stream:error"; error: string }) {
+  return `data: ${JSON.stringify(event)}\n\n`;
 }

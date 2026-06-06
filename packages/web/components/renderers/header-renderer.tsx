@@ -1,4 +1,4 @@
-import type { HeaderData, Theme } from "@ai-resume/shared";
+import type { HeaderData, Theme } from "@resumate/shared";
 
 interface Props {
   data: HeaderData;

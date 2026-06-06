@@ -1,16 +1,32 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { ArrowRight, BriefcaseBusiness, CheckCircle2, FileText, Loader2, Sparkles } from "lucide-react";
 import { useChatStore } from "@/lib/stores/chat-store";
 import { useResumeStore } from "@/lib/stores/resume-store";
+import { Button } from "@/components/ui/button";
 import { MessageBubble } from "./message-bubble";
-import { JDInput } from "./jd-input";
-import type { HarnessEvent, Resume } from "@ai-resume/shared";
+import type { HarnessEvent, Resume } from "@resumate/shared";
 
 type SSERawEvent =
   | HarnessEvent
   | { type: "stream:done" }
   | { type: "stream:error"; error?: string };
+
+const guidedPrompts = [
+  {
+    label: "目标岗位 JD",
+    placeholder: "粘贴岗位职责、任职要求、加分项...",
+  },
+  {
+    label: "个人经历",
+    placeholder: "写下你的工作经历、项目、教育背景、技能关键词...",
+  },
+  {
+    label: "生成要求",
+    placeholder: "例如：偏产品经理、突出 B 端增长、控制在一页...",
+  },
+];
 
 function hasResume(
   event: SSERawEvent,
@@ -19,17 +35,26 @@ function hasResume(
 }
 
 export function ChatPanel() {
-  const [input, setInput] = useState("");
-  const { messages, addMessage, setStreaming, isStreaming, pushHarnessEvent } =
+  const [drafts, setDrafts] = useState(() => guidedPrompts.map(() => ""));
+  const { messages, addMessage, setStreaming, isStreaming, pushHarnessEvent, clearHarnessEvents } =
     useChatStore();
   const { applyAIResult } = useResumeStore();
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const completion = useMemo(() => {
+    const done = drafts.filter((item) => item.trim()).length;
+    return Math.round((done / guidedPrompts.length) * 100);
+  }, [drafts]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isStreaming]);
 
-  async function sendMessage(content: string) {
+  async function submitWorkbench() {
+    const content = formatGuidedInput(drafts);
+    if (!content.trim() || isStreaming) return;
+
+    clearHarnessEvents();
     const userMsg = {
       id: crypto.randomUUID(),
       role: "user" as const,
@@ -37,7 +62,6 @@ export function ChatPanel() {
       timestamp: Date.now(),
     };
     addMessage(userMsg);
-    setInput("");
     setStreaming(true);
 
     const assistantMsgId = crypto.randomUUID();
@@ -51,9 +75,9 @@ export function ChatPanel() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMsg].map((m) => ({
-            role: m.role,
-            content: m.content,
+          messages: [...messages, userMsg].map((message) => ({
+            role: message.role,
+            content: message.content,
           })),
           apiKey,
         }),
@@ -85,64 +109,46 @@ export function ChatPanel() {
           try {
             const data = JSON.parse(line.slice(6)) as SSERawEvent;
 
-            // 记录 harness 事件（排除 stream:done/error）
             if (data.type !== "stream:done" && data.type !== "stream:error") {
               pushHarnessEvent(data as HarnessEvent);
             }
 
-            // 收集对话文本
             if (data.type === "step:chunk") {
-              assistantContent += (data as { text: string }).text;
+              assistantContent += data.text;
             }
 
-            // 处理对话步骤完成（AI 提问）
             if (
               data.type === "step:done" &&
               data.stepId === "collect" &&
               data.result &&
               typeof (data.result as Record<string, unknown>).text === "string"
             ) {
-              const result = data.result as { text: string };
-              if (result.text && !assistantContent) {
-                assistantContent = result.text;
-              }
+              assistantContent = (data.result as { text: string }).text;
             }
 
-            // 简历生成成功
             if (hasResume(data)) {
               applyAIResult(data.resume);
               hasResumeResult = true;
             }
 
-            // 处理错误
             if (data.type === "plan:error") {
               hasError = true;
-              const errMsg = (data as { error: string }).error;
-              assistantContent = `❌ AI 处理出错：${errMsg}`;
+              assistantContent = `AI 处理出错：${data.error}`;
             }
           } catch {
-            // 跳过解析失败的行
+            // Ignore malformed SSE rows.
           }
         }
       }
     } catch (err) {
       hasError = true;
-      assistantContent = `❌ 请求失败：${err instanceof Error ? err.message : String(err)}`;
+      assistantContent = `请求失败：${err instanceof Error ? err.message : String(err)}`;
     } finally {
-      // 确定最终的 assistant 消息
-      let finalContent: string;
-      if (hasError) {
-        finalContent = assistantContent || "❌ AI 服务出错了，请重试。";
-      } else if (hasResumeResult) {
-        finalContent =
-          assistantContent ||
-          "✅ 简历已生成！点击顶部的「打开编辑器 →」进行精调。";
-      } else if (assistantContent) {
-        finalContent = assistantContent;
-      } else {
-        finalContent = "AI 正在处理中，请稍候...";
-      }
-
+      const finalContent = resolveFinalAssistantContent({
+        hasError,
+        hasResumeResult,
+        assistantContent,
+      });
       addMessage({
         id: assistantMsgId,
         role: "assistant",
@@ -154,86 +160,119 @@ export function ChatPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 头部：编辑器入口 */}
-      <header className="flex items-center justify-between px-4 py-2 border-b bg-white shrink-0">
-        <span className="text-sm font-semibold text-gray-700">
-          AI 简历顾问
-        </span>
+    <div className="flex h-full flex-col bg-slate-50">
+      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
+        <div>
+          <p className="text-xs font-medium text-slate-400">AI Resume Studio</p>
+          <h1 className="text-base font-semibold text-slate-950">JD 定制中文简历</h1>
+        </div>
         <Link
           href="/editor"
-          className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+          className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
         >
-          打开编辑器 →
+          编辑器
+          <ArrowRight size={15} />
         </Link>
       </header>
 
-      {/* 消息列表 */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {messages.length === 0 && (
-          <div className="text-center text-gray-400 mt-8">
-            <p className="text-lg mb-2">
-              👋 你好！我是你的 AI 简历顾问
-            </p>
-            <p className="mb-4">
-              告诉我你的工作经历、教育背景和技能，我会帮你生成一份专业的简历。
-            </p>
-            <p className="text-xs text-gray-300">
-              也可以直接前往
-              <Link
-                href="/editor"
-                className="text-blue-500 underline mx-1"
-              >
-                编辑器
-              </Link>
-              手动创建简历
-            </p>
+      <div className="grid flex-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+        <section className="border-b border-slate-200 bg-white p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <Sparkles size={16} className="text-blue-600" />
+              结构化生成向导
+            </div>
+            <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+              {completion}% 已填写
+            </span>
           </div>
-        )}
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-        {isStreaming && (
-          <div className="flex justify-start mb-4">
-            <div className="bg-gray-100 rounded-lg px-4 py-2">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.1s]" />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+          <div className="space-y-3">
+            {guidedPrompts.map((prompt, index) => (
+              <label key={prompt.label} className="block">
+                <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-500">
+                  {index === 0 && <BriefcaseBusiness size={13} />}
+                  {index === 1 && <FileText size={13} />}
+                  {index === 2 && <CheckCircle2 size={13} />}
+                  {prompt.label}
+                </span>
+                <textarea
+                  value={drafts[index]}
+                  onChange={(event) => {
+                    const next = drafts.slice();
+                    next[index] = event.target.value;
+                    setDrafts(next);
+                  }}
+                  placeholder={prompt.placeholder}
+                  rows={index === 0 ? 4 : 3}
+                  className="w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-blue-400 focus:bg-white"
+                />
+              </label>
+            ))}
+          </div>
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <p className="text-xs leading-5 text-slate-500">
+              原型阶段会用你本地保存的 API Key 调用模型，不上传到数据库。
+            </p>
+            <Button
+              variant="primary"
+              onClick={submitWorkbench}
+              disabled={isStreaming || !drafts.some((item) => item.trim())}
+            >
+              {isStreaming ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+              生成定制简历
+            </Button>
+          </div>
+        </section>
+
+        <section className="overflow-y-auto p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-800">AI 工作记录</h2>
+            <span className="text-xs text-slate-400">{messages.length} 条消息</span>
+          </div>
+          {messages.length === 0 && !isStreaming && (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-white px-5 py-8 text-center">
+              <p className="text-sm font-medium text-slate-700">先把 JD 和经历放进上方表单。</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                AI 会先确认关键信息，再生成一份可编辑、可导出 PDF 的中文简历。
+              </p>
+            </div>
+          )}
+          {messages.map((message) => (
+            <MessageBubble key={message.id} message={message} />
+          ))}
+          {isStreaming && (
+            <div className="mb-4 flex justify-start">
+              <div className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm text-slate-500 shadow-sm">
+                <Loader2 size={15} className="animate-spin" />
+                AI 正在整理简历结构...
               </div>
             </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* 输入区 */}
-      <div className="border-t p-4">
-        <JDInput
-          onSubmit={(text) =>
-            sendMessage(`根据以下职位描述优化我的简历：\n${text}`)
-          }
-        />
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) =>
-              e.key === "Enter" && !e.shiftKey && input.trim() && sendMessage(input.trim())
-            }
-            placeholder="描述你的经历..."
-            disabled={isStreaming}
-            className="flex-1 rounded border px-3 py-2 text-sm disabled:bg-gray-50"
-          />
-          <button
-            onClick={() => input.trim() && sendMessage(input.trim())}
-            disabled={!input.trim() || isStreaming}
-            className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            发送
-          </button>
-        </div>
+          )}
+          <div ref={bottomRef} />
+        </section>
       </div>
     </div>
   );
+}
+
+function formatGuidedInput(drafts: string[]) {
+  return guidedPrompts
+    .map((prompt, index) => `【${prompt.label}】\n${drafts[index]?.trim() || "未提供"}`)
+    .join("\n\n");
+}
+
+function resolveFinalAssistantContent({
+  hasError,
+  hasResumeResult,
+  assistantContent,
+}: {
+  hasError: boolean;
+  hasResumeResult: boolean;
+  assistantContent: string;
+}) {
+  if (hasError) return assistantContent || "AI 服务出错了，请重试。";
+  if (hasResumeResult) {
+    return assistantContent || "简历已生成。你可以进入编辑器做模块级调整，然后导出 PDF。";
+  }
+  return assistantContent || "我还需要更多信息才能生成简历。";
 }

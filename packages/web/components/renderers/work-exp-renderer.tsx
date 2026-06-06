@@ -1,4 +1,4 @@
-import type { WorkExperienceData, Theme } from "@ai-resume/shared";
+import type { WorkExperienceData, Theme } from "@resumate/shared";
 
 interface Props {
   data: WorkExperienceData;

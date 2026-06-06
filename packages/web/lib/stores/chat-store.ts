@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ChatMessage, HarnessEvent } from "@ai-resume/shared";
+import type { ChatMessage, HarnessEvent } from "@resumate/shared";
 
 interface ChatState {
   messages: ChatMessage[];

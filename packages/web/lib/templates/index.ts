@@ -1,4 +1,4 @@
-import type { Template } from "@ai-resume/shared";
+import type { Template } from "@resumate/shared";
 import blueSimple from "./blue-simple.json";
 import classicBlack from "./classic-black.json";
 import elegantSerif from "./elegant-serif.json";

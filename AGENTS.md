@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Commands
 
@@ -58,7 +58,7 @@ Framework-agnostic package for running AI agent plans. Exports from `src/index.t
 
 - **`ToolRegistry`** (`src/tool-registry.ts`): Simple name→function map. `createBuiltInTools()` registers `classifyIntent` and `validateResume`.
 
-- **`AnthropicProvider`** (`src/llm/anthropic.ts`): Implements `LLMProvider` interface with `streamChat()` (SSE stream via Anthropic SDK) and `generateStructured()` (JSON output via schema injection). Default model: `claude-sonnet-4-6`.
+- **`AnthropicProvider`** (`src/llm/anthropic.ts`): Implements `LLMProvider` interface with `streamChat()` (SSE stream via Anthropic SDK) and `generateStructured()` (JSON output via schema injection). Default model: `Codex-sonnet-4-6`.
 
 - **`LLMProvider` interface** (`src/llm/types.ts`): Abstraction for swapping LLM providers. Methods: `streamChat(params, onChunk)` and `generateStructured<T>(params)`.
 
