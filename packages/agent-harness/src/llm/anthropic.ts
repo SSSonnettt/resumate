@@ -27,11 +27,13 @@ function extractText(
 
 export class AnthropicProvider implements LLMProvider {
   private client: Anthropic;
+  private model: string;
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, model?: string) {
     this.client = new Anthropic({
       apiKey: apiKey || process.env.ANTHROPIC_API_KEY || "",
     });
+    this.model = model || "claude-sonnet-4-20250514";
   }
 
   async streamChat(
@@ -40,7 +42,7 @@ export class AnthropicProvider implements LLMProvider {
   ): Promise<string> {
     let full = "";
     const stream = await this.client.messages.create({
-      model: "claude-sonnet-4-6",
+      model: this.model,
       max_tokens: 4096,
       temperature: params.temperature ?? 0.7,
       system: params.messages.find((m) => m.role === "system")?.content,
@@ -88,7 +90,7 @@ export class AnthropicProvider implements LLMProvider {
     ];
 
     const response = await this.client.messages.create({
-      model: "claude-sonnet-4-6",
+      model: this.model,
       max_tokens: 4096,
       temperature: params.temperature ?? 0.2,
       system:

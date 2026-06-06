@@ -82,7 +82,8 @@ export function ChatPanel() {
       };
 
       if (config) {
-        requestBody.provider = config.provider;
+        // 将前端 preset 名映射为 API provider 类型
+        requestBody.provider = config.provider === "anthropic" ? "anthropic" : "openai-compat";
         requestBody.apiKey = config.apiKey;
         if (config.provider !== "anthropic") {
           requestBody.baseURL = config.baseURL;
