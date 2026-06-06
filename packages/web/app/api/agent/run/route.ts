@@ -29,9 +29,11 @@ const runRequestSchema = z.object({
 
 const systemPrompt = [
   "你是一个面向中文求职者的 AI 简历工作台。",
-  "你的任务是根据用户提供的目标岗位 JD 和个人经历，生成一份可直接投递的中文简历。",
-  "简历必须具体、克制、职业化，优先突出与 JD 匹配的经历、技能和项目。",
-  "不要编造公司、学校、证书、时间等关键事实；信息不足时使用空字符串或空数组。",
+  "你的任务是根据用户提供的目标岗位 JD 和个人经历，生成一份完整、可直接投递的中文简历。",
+  "简历必须具体、职业化，优先突出与 JD 匹配的经历、技能和项目。",
+  "如果用户未提供具体细节（如公司名、学校名、时间等），可以基于 JD 合理推断补全，生成可信的示例内容——",
+  "例如根据 JD 中的技术栈推断相关项目经验，根据岗位要求推断可能的工作经历。",
+  "不要留空模块，每个模块都要填充合理的示例数据，确保简历看起来完整专业。",
   "输出必须严格符合 JSON Schema。",
 ].join("\n");
 
@@ -55,7 +57,7 @@ function createResumeGenerationPlan(messages: Array<{ role: string; content: str
         description: "整理已收集信息并提示下一步",
         dependsOn: ["classify"],
         systemPrompt:
-          "你是中文求职简历向导。根据对话判断是否已具备 JD、基础信息、工作经历、教育背景、技能、项目经历。回答必须简短：先说明已掌握什么，再只问一个最关键的缺失问题。如果信息已足够，告诉用户将生成定制简历。",
+          "你是中文求职简历向导。用户的 JD 已经提供，个人经历可能不完整。你的任务很简短：总结已有的关键信息（一两句话），然后直接告诉用户'信息已足够，现在为你生成一份完整的简历'。不要追问缺失信息，后续会基于 JD 合理补全。",
         userPromptTemplate: userContext,
       },
       {
@@ -66,10 +68,14 @@ function createResumeGenerationPlan(messages: Array<{ role: string; content: str
         schema: resumeSchema,
         systemPrompt,
         userPromptTemplate: [
-          "请基于以下对话生成一份中文简历 JSON。",
-          "模块建议顺序：header、summary、work-experience、projects、skills、education，可按信息完整度省略空模块之外的模块。",
-          "summary 要体现目标岗位匹配度；work-experience/project 描述使用结果导向的中文表达。",
-          "每个模块的 id 必须为稳定字符串；order 从 0 开始递增；visible 为 true。",
+          "请基于以下对话生成一份完整的中文简历 JSON。",
+          "核心要求：",
+          "1. 所有模块必须填充完整内容，不允许留空或使用空字符串/空数组",
+          "2. 用户未提供的细节（公司名、学校名、项目名、时间等），基于 JD 合理推断补全，生成可信的示例",
+          "3. 例如：JD 提到'桌面运维'和'ITSM'，就应生成相关工作经历和项目，描述要具体、结果导向",
+          "4. header/summary/work-experience/skills 为必填模块，education/projects 建议也生成",
+          "5. 每个模块的 id 为稳定字符串；order 从 0 开始递增；visible 为 true",
+          "6. summary 需体现与目标岗位的匹配度",
           userContext,
         ].join("\n\n"),
       },
