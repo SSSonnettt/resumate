@@ -2,8 +2,10 @@ import { NextRequest } from "next/server";
 import {
   AgentRunner,
   AnthropicProvider,
+  OpenAICompatProvider,
   createBuiltInTools,
 } from "@resumate/agent-harness";
+import type { LLMProvider } from "@resumate/agent-harness";
 import type { Plan } from "@resumate/agent-harness";
 import {
   normalizeResumeOrder,
@@ -13,7 +15,10 @@ import {
 import { z } from "zod";
 
 const runRequestSchema = z.object({
+  provider: z.enum(["anthropic", "openai-compat"]).default("anthropic"),
   apiKey: z.string().optional(),
+  baseURL: z.string().optional(),
+  model: z.string().optional(),
   messages: z.array(
     z.object({
       role: z.enum(["user", "assistant", "system"]),
@@ -103,10 +108,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { messages, apiKey } = parsed.data;
-  const provider = new AnthropicProvider(apiKey || undefined);
+  const { messages, apiKey, provider, baseURL, model } = parsed.data;
+  const llmProvider = createLLMProvider({ provider, apiKey, baseURL, model });
   const registry = createBuiltInTools();
-  const runner = new AgentRunner(provider, registry);
+  const runner = new AgentRunner(llmProvider, registry);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -145,4 +150,20 @@ export async function POST(request: NextRequest) {
 
 function encodeSSE(event: HarnessEvent | { type: "stream:done" } | { type: "stream:error"; error: string }) {
   return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+function createLLMProvider(config: {
+  provider: "anthropic" | "openai-compat";
+  apiKey?: string;
+  baseURL?: string;
+  model?: string;
+}): LLMProvider {
+  if (config.provider === "openai-compat") {
+    return new OpenAICompatProvider({
+      apiKey: config.apiKey || process.env.OPENAI_API_KEY || "",
+      baseURL: config.baseURL || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
+      model: config.model || process.env.OPENAI_MODEL || "gpt-4o",
+    });
+  }
+  return new AnthropicProvider(config.apiKey || undefined);
 }

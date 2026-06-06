@@ -6,6 +6,7 @@ import { useChatStore } from "@/lib/stores/chat-store";
 import { useResumeStore } from "@/lib/stores/resume-store";
 import { Button } from "@/components/ui/button";
 import { MessageBubble } from "./message-bubble";
+import { getProviderConfig } from "@/components/api-key-dialog";
 import type { HarnessEvent, Resume } from "@resumate/shared";
 
 type SSERawEvent =
@@ -70,17 +71,33 @@ export function ChatPanel() {
     let hasResumeResult = false;
 
     try {
-      const apiKey = localStorage.getItem("ai-api-key") || "";
+      const config = getProviderConfig();
+      const apiKey = config?.apiKey || localStorage.getItem("ai-api-key") || "";
+
+      const requestBody: Record<string, unknown> = {
+        messages: [...messages, userMsg].map((message) => ({
+          role: message.role,
+          content: message.content,
+        })),
+      };
+
+      if (config) {
+        requestBody.provider = config.provider;
+        requestBody.apiKey = config.apiKey;
+        if (config.provider !== "anthropic") {
+          requestBody.baseURL = config.baseURL;
+          requestBody.model = config.model;
+        }
+      } else {
+        // 兼容旧版：未配置 provider 时默认用 anthropic
+        requestBody.provider = "anthropic";
+        requestBody.apiKey = apiKey;
+      }
+
       const response = await fetch("/api/agent/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMsg].map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
-          apiKey,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
