@@ -11,7 +11,7 @@ const PRESETS = {
   deepseek: {
     label: "DeepSeek",
     placeholder: "sk-...",
-    defaultBaseURL: "https://api.deepseek.com/v1",
+    defaultBaseURL: "https://api.deepseek.com",
     defaultModel: "deepseek-chat",
   },
   openai: {

@@ -32,6 +32,7 @@ export class OpenAICompatProvider implements LLMProvider {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.apiKey}`,
+        Accept: "text/event-stream",
       },
       body: JSON.stringify({
         model: this.model,
@@ -102,16 +103,31 @@ export class OpenAICompatProvider implements LLMProvider {
     });
     const schemaStr = JSON.stringify(jsonSchema, null, 2);
 
-    const messages = [
-      ...params.messages,
-      {
-        role: "assistant" as const,
-        content:
-          "I will respond with valid JSON only, following this schema:\n```json\n" +
-          schemaStr +
-          "\n```",
-      },
-    ];
+    // DeepSeek 的 json_object 模式要求 prompt 中必须包含 "json" 关键词。
+    // 将 schema 注入到 system prompt 或 user prompt 中（而非 assistant 消息），
+    // 以确保 "json" 出现在 DeepSeek 校验的 prompt 范围内。
+    const schemaInjection =
+      "\n\n你必须严格按照以下 JSON Schema 输出 json 格式的响应，不要包含任何其他文字：\n```json\n" +
+      schemaStr +
+      "\n```";
+
+    const messages = params.messages.map((m, i) => {
+      if (m.role === "system") {
+        return { ...m, content: m.content + schemaInjection };
+      }
+      return m;
+    });
+
+    // 如果没有 system 消息，加到第一条 user 消息末尾
+    if (!params.messages.some((m) => m.role === "system")) {
+      const firstUserIdx = messages.findIndex((m) => m.role === "user");
+      if (firstUserIdx >= 0) {
+        messages[firstUserIdx] = {
+          ...messages[firstUserIdx],
+          content: messages[firstUserIdx].content + schemaInjection,
+        };
+      }
+    }
 
     const response = await fetch(`${this.baseURL}/chat/completions`, {
       method: "POST",
