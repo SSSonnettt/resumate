@@ -1,81 +1,101 @@
-# Vuetify (Default)
+# Resumate
 
-This is the official scaffolding tool for Vuetify, designed to give you a head start in building your new Vuetify application. It sets up a base template with all the necessary configurations and standard directory structure, enabling you to begin development without the hassle of setting up the project from scratch.
+> AI 对话式开源简历生成器 — 用自然语言描述你的经历，AI 自动生成专业简历，可视化编辑器精细调整，一键导出 PDF/图片。
 
-## ❗️ Important Links
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+  <img src="https://img.shields.io/badge/Next.js-15-black" alt="Next.js">
+  <img src="https://img.shields.io/badge/React-19-61DAFB" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6" alt="TypeScript">
+</p>
 
-- 📄 [Docs](https://vuetifyjs.com/)
-- 🚨 [Issues](https://issues.vuetifyjs.com/)
-- 🏬 [Store](https://store.vuetifyjs.com/)
-- 🎮 [Playground](https://play.vuetifyjs.com/)
-- 💬 [Discord](https://community.vuetifyjs.com)
+## ✨ 核心功能
 
-## 💿 Install
+- **🤖 AI 对话生成** — 和 AI 聊天描述你的经历，自动生成完整简历，支持粘贴 JD 优化针对性
+- **🎨 可视化编辑器** — 三栏布局：模块面板 + 拖拽画布 + 样式面板，所见即所得
+- **📄 多模板切换** — 经典黑、优雅衬线、蓝色简约等多种模板，一键切换
+- **🔧 精细样式控制** — 主题色、字体族、字号、间距任意调整，实时预览
+- **📥 双格式导出** — 浏览器原生打印导出 PDF，html2canvas 导出高清 PNG
+- **↩️ 完整撤销/重做** — 基于 Immer Patch 的无限撤销重做，操作无忧
+- **💾 本地存储** — 所有数据保存在浏览器 localStorage，不上传服务器，隐私安全
 
-Set up your project using your preferred package manager. Use the corresponding command to install the dependencies:
-
-| Package Manager                                                | Command        |
-|---------------------------------------------------------------|----------------|
-| [yarn](https://yarnpkg.com/getting-started)                   | `yarn install` |
-| [npm](https://docs.npmjs.com/cli/v7/commands/npm-install)     | `npm install`  |
-| [pnpm](https://pnpm.io/installation)                          | `pnpm install` |
-| [bun](https://bun.sh/#getting-started)                        | `bun install`  |
-
-After completing the installation, your environment is ready for Vuetify development.
-
-## ✨ Features
-
-- 🖼️ **Optimized Front-End Stack**: Leverage the latest Vue 3 and Vuetify 3 for a modern, reactive UI development experience. [Vue 3](https://v3.vuejs.org/) | [Vuetify 3](https://vuetifyjs.com/en/)
-- 🗃️ **State Management**: Integrated with [Pinia](https://pinia.vuejs.org/), the intuitive, modular state management solution for Vue.
-- 🚦 **Routing and Layouts**: Utilizes Vue Router for SPA navigation and vite-plugin-vue-layouts for organizing Vue file layouts. [Vue Router](https://router.vuejs.org/) | [vite-plugin-vue-layouts](https://github.com/JohnCampionJr/vite-plugin-vue-layouts)
-- 💻 **Enhanced Development Experience**: Benefit from TypeScript's static type checking and the ESLint plugin suite for Vue, ensuring code quality and consistency. [TypeScript](https://www.typescriptlang.org/) | [ESLint Plugin Vue](https://eslint.vuejs.org/)
-- ⚡ **Next-Gen Tooling**: Powered by Vite, experience fast cold starts and instant HMR (Hot Module Replacement). [Vite](https://vitejs.dev/)
-- 🧩 **Automated Component Importing**: Streamline your workflow with unplugin-vue-components, automatically importing components as you use them. [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)
-- 🛠️ **Strongly-Typed Vue**: Use vue-tsc for type-checking your Vue components, and enjoy a robust development experience. [vue-tsc](https://github.com/johnsoncodehk/volar/tree/master/packages/vue-tsc)
-
-These features are curated to provide a seamless development experience from setup to deployment, ensuring that your Vuetify application is both powerful and maintainable.
-
-## 💡 Usage
-
-This section covers how to start the development server and build your project for production.
-
-### Starting the Development Server
-
-To start the development server with hot-reload, run the following command. The server will be accessible at [http://localhost:3000](http://localhost:3000):
+## 🚀 快速开始
 
 ```bash
-yarn dev
+# 克隆仓库
+git clone git@github.com:SSSonnettt/resumate.git
+cd resumate
+
+# 安装依赖（需要 pnpm）
+pnpm install
+
+# 启动开发服务器
+pnpm dev
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+浏览器访问 `http://localhost:5001`，输入你的 Anthropic API Key 即可开始使用。
 
-> Add NODE_OPTIONS='--no-warnings' to suppress the JSON import warnings that happen as part of the Vuetify import mapping. If you are on Node [v21.3.0](https://nodejs.org/en/blog/release/v21.3.0) or higher, you can change this to NODE_OPTIONS='--disable-warning=5401'. If you don't mind the warning, you can remove this from your package.json dev script.
+> **前置条件**：Node.js 18+、pnpm 10+、Anthropic API Key（[获取地址](https://console.anthropic.com/)）
 
-### Building for Production
+## 🛠 技术栈
 
-To build your project for production, use:
+| 层 | 技术 |
+|---|------|
+| 框架 | Next.js 15 (App Router) + React 19 |
+| 语言 | TypeScript 5.7 |
+| 样式 | Tailwind CSS 3 |
+| 状态管理 | Zustand + Immer |
+| 拖拽 | @dnd-kit |
+| AI | Anthropic SDK (Claude Sonnet 4) |
+| 导出 | html2canvas / 浏览器 print |
+| 构建 | Turborepo + pnpm workspace |
+
+## 📁 项目结构
+
+```
+resumate/
+├── packages/
+│   ├── shared/              # 共享类型定义（Resume, Module, Theme 等）
+│   ├── agent-harness/       # AI Agent 编排引擎（Plan/Step/SSE）
+│   └── web/                 # Next.js 全栈应用
+│       ├── app/
+│       │   ├── page.tsx              # 首页 — AI 对话 + 缩略预览
+│       │   ├── editor/page.tsx       # 编辑器 — 三栏布局
+│       │   ├── preview/page.tsx      # 预览导出
+│       │   └── api/agent/run/        # SSE Agent API
+│       ├── components/
+│       │   ├── chat/                 # 聊天面板
+│       │   ├── editor/              # 编辑器组件
+│       │   ├── renderers/           # 简历模块渲染器
+│       │   └── ui/                  # 通用 UI 组件
+│       └── lib/
+│           ├── stores/              # Zustand 状态管理
+│           ├── templates/           # 简历模板 JSON
+│           └── resume/              # 简历操作工具函数
+├── CLAUDE.md                # Claude Code 项目指引
+└── turbo.json               # Turborepo 配置
+```
+
+## 🧩 简历模块
+
+| 模块 | 说明 |
+|------|------|
+| Header | 姓名、职位、联系方式 |
+| Summary | 个人简介 |
+| Work Experience | 工作经历（公司、职位、时间、描述） |
+| Education | 教育背景（学校、学位、专业） |
+| Skills | 技能标签（分类展示） |
+| Projects | 项目经历（名称、描述、技术栈） |
+| Custom | 自定义模块 |
+
+## 🐳 Docker 部署
 
 ```bash
-yarn build
+docker compose up -d
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+服务运行在 `http://localhost:3000`。
 
-Once the build process is completed, your application will be ready for deployment in a production environment.
+## 📄 License
 
-## 💪 Support Vuetify Development
-
-This project is built with [Vuetify](https://vuetifyjs.com/en/), a UI Library with a comprehensive collection of Vue components. Vuetify is an MIT licensed Open Source project that has been made possible due to the generous contributions by our [sponsors and backers](https://vuetifyjs.com/introduction/sponsors-and-backers/). If you are interested in supporting this project, please consider:
-
-- [Requesting Enterprise Support](https://support.vuetifyjs.com/)
-- [Sponsoring John on Github](https://github.com/users/johnleider/sponsorship)
-- [Sponsoring Kael on Github](https://github.com/users/kaelwd/sponsorship)
-- [Supporting the team on Open Collective](https://opencollective.com/vuetify)
-- [Becoming a sponsor on Patreon](https://www.patreon.com/vuetify)
-- [Becoming a subscriber on Tidelift](https://tidelift.com/subscription/npm/vuetify)
-- [Making a one-time donation with Paypal](https://paypal.me/vuetify)
-
-## 📑 License
-[MIT](http://opensource.org/licenses/MIT)
-
-Copyright (c) 2016-present Vuetify, LLC
+[MIT](LICENSE)
