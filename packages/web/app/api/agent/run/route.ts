@@ -46,56 +46,126 @@ function createResumeGenerationPlan(messages: Array<{ role: string; content: str
     steps: [
       {
         id: "classify",
-        type: "tool",
+        type: "tool" as const,
         description: "识别用户当前输入意图",
         tool: "classifyIntent",
         toolArgs: { input: lastMessage },
       },
       {
-        id: "collect",
-        type: "chat",
-        description: "整理已收集信息并提示下一步",
+        id: "analyze-jd",
+        type: "chat" as const,
+        description: "深度分析岗位 JD",
         dependsOn: ["classify"],
+        systemPrompt: [
+          "你是 JD 分析专家。从岗位描述中提取关键信息，输出简洁的结构化分析。",
+          "必须覆盖：",
+          "1. 核心技能关键词（5-8 个，按重要性排序）",
+          "2. 必备经验（年资、领域、行业）",
+          "3. 加分项（证书、工具、软技能）",
+          "4. 岗位级别与团队定位",
+          "5. 简历应突出的 3 个核心方向",
+          "只输出分析结果，不要客套话。",
+        ].join("\n"),
+        userPromptTemplate: `请分析以下岗位描述：\n\n${lastMessage}`,
+      },
+      {
+        id: "collect",
+        type: "chat" as const,
+        description: "整理已收集信息",
+        dependsOn: ["analyze-jd"],
         systemPrompt:
           "你是中文求职简历向导。用户的 JD 已经提供，个人经历可能不完整。你的任务很简短：总结已有的关键信息（一两句话），然后直接告诉用户'信息已足够，现在为你生成一份完整的简历'。不要追问缺失信息，后续会基于 JD 合理补全。",
         userPromptTemplate: userContext,
       },
       {
         id: "generate",
-        type: "structured",
+        type: "structured" as const,
         description: "生成岗位定制中文简历",
-        dependsOn: ["collect"],
+        dependsOn: ["analyze-jd", "collect"],
         schema: resumeSchema,
         systemPrompt,
-        userPromptTemplate: [
-          "请基于以下对话生成一份完整的中文简历 JSON。",
-          "核心要求：",
-          "1. 所有模块必须填充完整内容，不允许留空或使用空字符串/空数组",
-          "2. 用户未提供的细节（公司名、学校名、项目名、时间等），基于 JD 合理推断补全，生成可信的示例",
-          "3. 例如：JD 提到'桌面运维'和'ITSM'，就应生成相关工作经历和项目，描述要具体、结果导向",
-          "4. header/summary/work-experience/skills 为必填模块，education/projects 建议也生成",
-          "5. 每个模块的 id 为稳定字符串；order 从 0 开始递增；visible 为 true",
-          "6. summary 需体现与目标岗位的匹配度",
-          userContext,
-        ].join("\n\n"),
+        userPromptTemplate: ({ stepResults }) => {
+          const jdAnalysis =
+            (stepResults["analyze-jd"] as { text?: string } | undefined)?.text ?? "";
+          return [
+            "请基于以下信息生成一份完整的中文简历 JSON。",
+            "",
+            "## JD 深度分析",
+            jdAnalysis,
+            "",
+            "## 对话记录",
+            userContext,
+            "",
+            "## 核心要求",
+            "1. 严格基于 JD 分析中的关键词和方向来组织内容",
+            "2. 所有模块必须填充完整，不允许留空或使用空字符串/空数组",
+            "3. 用户未提供的细节（公司名、学校名、项目名、时间等），基于 JD 合理推断补全",
+            "4. header/summary/work-experience/skills 为必填，education/projects 也需生成",
+            "5. 每个模块 id 为稳定字符串；order 从 0 递增；visible 为 true",
+            "6. summary 要体现与目标岗位的匹配度",
+          ].join("\n\n");
+        },
+      },
+      {
+        id: "critic",
+        type: "chat" as const,
+        description: "审查简历质量",
+        dependsOn: ["generate"],
+        systemPrompt: [
+          "你是资深简历审查专家。审查以下简历 JSON，标记具体问题。",
+          "不要修改内容，只输出问题清单。检查项：",
+          "1. 被动语态/弱动词（'负责'、'参与' 等）→ 应改为结果导向的强动词",
+          "2. 缺少量化数据（没有数字、百分比、规模）",
+          "3. 内容重复（不同模块说了类似的话）",
+          "4. 与 JD 关键词不匹配（JD 要求的技能在简历中缺失）",
+          "5. 模块长度失衡（某个模块过长或过短）",
+          "按模块和条目逐项标记，例如：'work-experience[0].description: 弱动词'负责'，建议改为具体成果'。",
+        ].join("\n"),
+        userPromptTemplate: ({ stepResults }) =>
+          JSON.stringify(stepResults.generate, null, 2),
+      },
+      {
+        id: "refine",
+        type: "structured" as const,
+        description: "精修简历问题",
+        dependsOn: ["generate", "critic"],
+        schema: resumeSchema,
+        systemPrompt: [
+          "你是简历润色专家。基于审查意见修复简历。",
+          "关键原则：只修改被标记的部分，未标记的内容必须保持原样，一个字都不改。",
+          "输出完整的修复后 Resume JSON。",
+        ].join("\n"),
+        userPromptTemplate: ({ stepResults }) => {
+          const criticResult =
+            (stepResults.critic as { text?: string } | undefined)?.text ?? "";
+          return [
+            "## 原简历 JSON",
+            JSON.stringify(stepResults.generate, null, 2),
+            "",
+            "## 审查意见",
+            criticResult,
+            "",
+            "请基于审查意见输出修复后的简历 JSON，只修改被标记的部分。",
+          ].join("\n\n");
+        },
       },
       {
         id: "validate",
-        type: "tool",
+        type: "tool" as const,
         description: "校验简历结构",
-        dependsOn: ["generate"],
+        dependsOn: ["refine"],
         tool: "validateResume",
         toolArgs: ({ stepResults }) => ({
-          resume: stepResults.generate,
+          resume: stepResults.refine,
         }),
       },
       {
         id: "present",
-        type: "compose",
+        type: "compose" as const,
         description: "输出最终简历",
         dependsOn: ["validate"],
         compose: ({ stepResults }) =>
-          normalizeResumeOrder(resumeSchema.parse(stepResults.generate)),
+          normalizeResumeOrder(resumeSchema.parse(stepResults.refine)),
       },
     ],
   };
