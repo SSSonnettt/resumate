@@ -5,6 +5,7 @@ import { useResumeStore } from "@/lib/stores/resume-store";
 import { ModuleRenderer } from "@/components/renderers/module-renderer";
 import { templates } from "@/lib/templates";
 import { Button } from "@/components/ui/button";
+import type { ResumeModule } from "@resumate/shared";
 
 export function PreviewStep() {
   const resume = useResumeStore((s) => s.resume);
@@ -30,10 +31,10 @@ export function PreviewStep() {
           className="mx-auto bg-white p-10 shadow-sm ring-1 ring-slate-200"
           style={{ width: "820px", minHeight: "1160px" }}
         >
-          {resume.modules.map((module) => (
+          {resume.modules.map((mod: ResumeModule) => (
             <ModuleRenderer
-              key={module.id}
-              module={module}
+              key={mod.id}
+              module={mod}
               theme={resume.theme}
             />
           ))}
