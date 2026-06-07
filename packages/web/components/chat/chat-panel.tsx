@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, CheckCircle2, FileText, Loader2, Sparkles } from "lucide-react";
 import { useChatStore } from "@/lib/stores/chat-store";
@@ -35,8 +35,14 @@ function hasResume(
   return event.type === "plan:done" && "resume" in event;
 }
 
-export function ChatPanel() {
+interface ChatPanelProps {
+  variant?: "standalone" | "wizard";
+  onGenerate?: () => void;
+}
+
+export function ChatPanel({ variant = "standalone", onGenerate }: ChatPanelProps) {
   const [drafts, setDrafts] = useState(() => guidedPrompts.map(() => ""));
+  const [wizardInput, setWizardInput] = useState("");
   const { messages, addMessage, setStreaming, isStreaming, pushHarnessEvent, clearHarnessEvents } =
     useChatStore();
   const { applyAIResult } = useResumeStore();
@@ -51,8 +57,7 @@ export function ChatPanel() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isStreaming]);
 
-  async function submitWorkbench() {
-    const content = formatGuidedInput(drafts);
+  async function submitMessage(content: string) {
     if (!content.trim() || isStreaming) return;
 
     clearHarnessEvents();
@@ -82,7 +87,6 @@ export function ChatPanel() {
       };
 
       if (config) {
-        // 将前端 preset 名映射为 API provider 类型
         requestBody.provider = config.provider === "anthropic" ? "anthropic" : "openai-compat";
         requestBody.apiKey = config.apiKey;
         if (config.provider !== "anthropic") {
@@ -90,7 +94,6 @@ export function ChatPanel() {
           requestBody.model = config.model;
         }
       } else {
-        // 兼容旧版：未配置 provider 时默认用 anthropic
         requestBody.provider = "anthropic";
         requestBody.apiKey = apiKey;
       }
@@ -147,6 +150,7 @@ export function ChatPanel() {
             if (hasResume(data)) {
               applyAIResult(data.resume);
               hasResumeResult = true;
+              onGenerate?.();
             }
 
             if (data.type === "plan:error") {
@@ -177,23 +181,39 @@ export function ChatPanel() {
     }
   }
 
+  async function submitWorkbench() {
+    const content = formatGuidedInput(drafts);
+    await submitMessage(content);
+  }
+
+  async function handleWizardSubmit(e: FormEvent) {
+    e.preventDefault();
+    const content = wizardInput.trim();
+    if (!content) return;
+    setWizardInput("");
+    await submitMessage(content);
+  }
+
   return (
     <div className="flex h-full flex-col bg-slate-50">
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
-        <div>
-          <p className="text-xs font-medium text-slate-400">AI Resume Studio</p>
-          <h1 className="text-base font-semibold text-slate-950">JD 定制中文简历</h1>
-        </div>
-        <Link
-          href="/editor"
-          className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
-        >
-          编辑器
-          <ArrowRight size={15} />
-        </Link>
-      </header>
+      {variant === "standalone" && (
+        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
+          <div>
+            <p className="text-xs font-medium text-slate-400">AI Resume Studio</p>
+            <h1 className="text-base font-semibold text-slate-950">JD 定制中文简历</h1>
+          </div>
+          <Link
+            href="/editor"
+            className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+          >
+            编辑器
+            <ArrowRight size={15} />
+          </Link>
+        </header>
+      )}
 
       <div className="grid flex-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+        {variant === "standalone" && (
         <section className="border-b border-slate-200 bg-white p-5">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -241,6 +261,7 @@ export function ChatPanel() {
             </Button>
           </div>
         </section>
+        )}
 
         <section className="overflow-y-auto p-5">
           <div className="mb-3 flex items-center justify-between">
@@ -268,6 +289,33 @@ export function ChatPanel() {
           )}
           <div ref={bottomRef} />
         </section>
+
+        {variant === "wizard" && !isStreaming && (
+          <div className="border-t border-slate-200 bg-white p-4">
+            <form onSubmit={handleWizardSubmit} className="flex gap-2">
+              <textarea
+                value={wizardInput}
+                onChange={(e) => setWizardInput(e.target.value)}
+                placeholder="输入你的经历信息..."
+                rows={2}
+                className="flex-1 resize-none rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-6 outline-none focus:border-blue-400 focus:bg-white"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleWizardSubmit(e as unknown as React.FormEvent);
+                  }
+                }}
+              />
+              <button
+                type="submit"
+                disabled={!wizardInput.trim() || isStreaming}
+                className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                发送
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );
