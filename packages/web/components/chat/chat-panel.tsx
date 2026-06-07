@@ -98,7 +98,8 @@ export function ChatPanel({ variant = "standalone", onGenerate }: ChatPanelProps
         requestBody.apiKey = apiKey;
       }
 
-      const response = await fetch("/api/agent/run", {
+      const endpoint = variant === "wizard" ? "/api/agent/chat" : "/api/agent/run";
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
@@ -270,10 +271,28 @@ export function ChatPanel({ variant = "standalone", onGenerate }: ChatPanelProps
           </div>
           {messages.length === 0 && !isStreaming && (
             <div className="rounded-lg border border-dashed border-slate-200 bg-white px-5 py-8 text-center">
-              <p className="text-sm font-medium text-slate-700">先把 JD 和经历放进上方表单。</p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                AI 会先确认关键信息，再生成一份可编辑、可导出 PDF 的中文简历。
-              </p>
+              {variant === "wizard" ? (
+                <>
+                  <p className="text-sm font-medium text-slate-700">
+                    👋 你好！我是你的求职简历顾问
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    我会逐步引导你提供信息——从基本信息、工作经历到技能和项目。
+                    <br />
+                    你可以粘贴 JD 让我了解目标岗位要求，也可以随时回复"跳过"。
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-slate-700">
+                    先把 JD 和经历放进上方表单。
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    AI
+                    会先确认关键信息，再生成一份可编辑、可导出 PDF 的中文简历。
+                  </p>
+                </>
+              )}
             </div>
           )}
           {messages.map((message) => (
