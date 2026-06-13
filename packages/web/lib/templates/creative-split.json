@@ -1,0 +1,42 @@
+{
+  "id": "creative-split",
+  "name": "Creative Split",
+  "nameZh": "创意双栏",
+  "description": "左右双栏布局，左侧技能/语言，右侧工作/项目使用卡片变体",
+  "layout": "two-column",
+  "colors": {
+    "primary": "#6c5ce7",
+    "primaryLight": "#a29bfe",
+    "primaryDark": "#4834d4",
+    "accent": "#00b894",
+    "background": "#ffffff",
+    "surface": "#f5f3ff",
+    "textPrimary": "#2d1b69",
+    "textSecondary": "#4a3f7a",
+    "textMuted": "#8b83ba",
+    "border": "#dcd6f7",
+    "divider": "#c4b5e3"
+  },
+  "typography": {
+    "fontFamily": "sans",
+    "scale": {
+      "h1": "text-2xl leading-8 font-bold",
+      "h2": "text-sm leading-5 font-bold uppercase tracking-wider",
+      "h3": "text-sm leading-5 font-semibold",
+      "body": "text-sm leading-6",
+      "small": "text-xs leading-5",
+      "caption": "text-[10px] leading-4"
+    }
+  },
+  "spacing": "normal",
+  "sections": {
+    "header": { "enabled": true, "order": 1, "variant": "default", "title": "" },
+    "work": { "enabled": true, "order": 3, "variant": "default", "title": "工作经验" },
+    "education": { "enabled": true, "order": 4, "variant": "compact", "title": "教育" },
+    "skills": { "enabled": true, "order": 2, "variant": "tag-cloud", "title": "技能" },
+    "projects": { "enabled": true, "order": 5, "variant": "card", "title": "项目作品" },
+    "languages": { "enabled": true, "order": 6, "variant": "compact", "title": "语言" }
+  },
+  "headerLayout": "split",
+  "sectionDivider": "dot"
+}

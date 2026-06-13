@@ -1,7 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { z } from "zod";
-import type { LLMProvider, ChatMessage } from "./types";
+import type { LLMProvider, ChatMessage, StreamChunk } from "./types";
 
 /** 从 content blocks 中提取第一个文本块 */
 function extractText(
@@ -37,8 +37,8 @@ export class AnthropicProvider implements LLMProvider {
   }
 
   async streamChat(
-    params: { messages: ChatMessage[]; temperature?: number },
-    onChunk: (chunk: string) => void,
+    params: { messages: ChatMessage[]; temperature?: number; thinking?: { type: "enabled" | "disabled" } },
+    onChunk: (chunk: StreamChunk) => void,
   ): Promise<string> {
     let full = "";
     const stream = await this.client.messages.create({
@@ -61,7 +61,7 @@ export class AnthropicProvider implements LLMProvider {
         event.delta.type === "text_delta"
       ) {
         full += event.delta.text;
-        onChunk(event.delta.text);
+        onChunk({ type: "text", content: event.delta.text });
       }
     }
     return full;
@@ -91,7 +91,7 @@ export class AnthropicProvider implements LLMProvider {
 
     const response = await this.client.messages.create({
       model: this.model,
-      max_tokens: 4096,
+      max_tokens: 16384,
       temperature: params.temperature ?? 0.2,
       system:
         "You are a JSON-only API. Always respond with valid JSON matching the provided schema. No other text.",

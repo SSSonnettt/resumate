@@ -161,3 +161,38 @@ Redo: reverse of undo.
 
 - `packages/web/next-env.d.ts` — Next.js type declarations
 - `packages/web/tsconfig.tsbuildinfo` — TypeScript incremental build cache
+
+## Governance Rules
+
+> 每当 AI 编码助手犯了一个错误，就将其规则化写入此文件，确保永不重犯。
+> 每条规则用"案例背景 → 约束规则"格式书写，使用祈使句。
+
+### Rule 1: localStorage Key 不可更改
+
+**案例**: AI 编码助手在重构 `resume-store.ts` 时将 localStorage key 从 `"resumate-data"` 改为 `"resume-data"`，导致所有已有用户的简历数据无法读取。
+
+**规则**: Never rename localStorage keys without migration logic. Always define storage keys as named constants (e.g., `const STORAGE_KEY = "resumate-data"`), never use inline strings in `localStorage.getItem/setItem` calls. When a key rename is absolutely necessary, implement a migration that reads the old key and writes to the new key.
+
+### Rule 2: Zustand Store 结构变更需保证 Immer Patch 兼容
+
+**案例**: AI 编码助手在 `resume-store.ts` 中新增字段时未考虑 Immer patch 兼容性，导致旧版本 patch 回放失败、撤销功能崩溃。
+
+**规则**: When modifying Zustand store shape in `resume-store.ts`, ensure Immer patch compatibility. New optional fields must have defaults. Never remove existing fields without a migration version bump. Always test undo/redo after store structure changes.
+
+### Rule 3: `/api/agent/run` 必须返回 SSE 格式
+
+**案例**: AI 编码助手在 `/api/agent/run` 返回了非 SSE 格式的 JSON 响应，导致前端 SSE 解析器报错、用户看到白屏。
+
+**规则**: The `/api/agent/run` route MUST ALWAYS return `text/event-stream` with proper SSE framing (`data: {...}\n\n`). Never return plain JSON from this endpoint. Use a separate route for non-streaming API calls.
+
+### Rule 4: 内部包依赖必须使用 workspace 协议
+
+**案例**: AI 编码助手在 `web/package.json` 中用 `"@resumate/shared": "^1.0.0"` 替代 `"workspace:*"`，导致构建失败。
+
+**规则**: Internal package dependencies MUST use `"workspace:*"` protocol in `package.json`. Example: `"@resumate/shared": "workspace:*"` not `"^1.0.0"`. Run `pnpm install` after any dependency changes and verify with `pnpm build`.
+
+### Rule 5: 不可删除 shared/src/index.ts 的类型导出
+
+**案例**: AI 编码助手重构时删除了 `shared/src/index.ts` 中"未使用"的类型导出，导致 web 包构建失败（web 包通过 barrel export 引用这些类型）。
+
+**规则**: Do not remove exports from `shared/src/index.ts` without checking all consumers. Run `pnpm build` or `pnpm check-types` before committing any export removals. The shared package is a public API surface — all exports constitute a contract with consumer packages.

@@ -1,131 +1,159 @@
 "use client";
 import { useMemo, useState } from "react";
-import {
-  customDataSchema,
-  educationDataSchema,
-  headerDataSchema,
-  projectsDataSchema,
-  skillsDataSchema,
-  summaryDataSchema,
-  workExperienceDataSchema,
-  type Module,
-} from "@resumate/shared";
 import { useResumeStore } from "@/lib/stores/resume-store";
 import { Button } from "@/components/ui/button";
 import { AIEditInput } from "./ai-edit-input";
-import { Sparkles } from "lucide-react";
+import { getFormForSection } from "./module-forms";
+import { Sparkle, CaretDown, CaretUp } from "@phosphor-icons/react";
 
-const moduleLabels: Record<Module["type"], string> = {
-  header: "基础信息",
-  summary: "个人总结",
-  "work-experience": "工作经历",
+const sectionLabels: Record<string, string> = {
+  basics: "基本信息",
+  work: "工作经历",
   education: "教育背景",
   skills: "技能",
   projects: "项目经历",
-  custom: "自定义模块",
+  awards: "获奖",
+  certificates: "证书",
+  publications: "出版物",
+  volunteer: "志愿者",
+  languages: "语言",
+  interests: "兴趣",
+  references: "推荐信",
 };
 
-export function ModuleDataEditor({ module }: { module: Module }) {
-  const updateModuleData = useResumeStore((state) => state.updateModuleData);
-  const [draft, setDraft] = useState(() =>
-    JSON.stringify(module.data, null, 2),
-  );
-  const [error, setError] = useState("");
+interface Props {
+  sectionKey: string;
+  data: Record<string, unknown>;
+  onChange: (data: Record<string, unknown>) => void;
+}
+
+export function SectionDataEditor({ sectionKey, data, onChange }: Props) {
   const [showAIEdit, setShowAIEdit] = useState(false);
+  const [showJSON, setShowJSON] = useState(false);
+  const [jsonDraft, setJsonDraft] = useState("");
+  const [jsonError, setJsonError] = useState("");
 
-  const schema = useMemo(() => getDataSchema(module.type), [module.type]);
+  const FormComponent = useMemo(() => getFormForSection(sectionKey), [sectionKey]);
 
-  function save() {
-    const parsedJson = parseJson(draft);
-    if (!parsedJson.ok) {
-      setError(parsedJson.error);
-      return;
-    }
-
-    const parsedData = schema.safeParse(parsedJson.value);
-    if (!parsedData.success) {
-      setError("字段结构不符合该模块要求，请检查 JSON。");
-      return;
-    }
-
-    updateModuleData(module.id, parsedData.data);
-    setError("");
+  function handleAIResult(data: Record<string, unknown>) {
+    onChange(data);
+    setShowAIEdit(false);
   }
 
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white">
-      <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-        <div>
-          <p className="text-xs font-medium text-slate-400">{module.type}</p>
-          <h3 className="text-sm font-semibold text-slate-800">
-            {moduleLabels[module.type]}
-          </h3>
-        </div>
-        <div className="flex items-center gap-1">
+  function openJSONTab() {
+    setJsonDraft(JSON.stringify(data, null, 2));
+    setJsonError("");
+    setShowJSON(!showJSON);
+  }
+
+  function handleJSONApply() {
+    try {
+      const parsed = JSON.parse(jsonDraft);
+      onChange(parsed);
+      setJsonError("");
+    } catch {
+      setJsonError("JSON 格式不正确。");
+    }
+  }
+
+  const label = sectionLabels[sectionKey] || sectionKey;
+
+  const titleBar = (
+    <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-2">
+      <div>
+        <p className="text-[10px] font-medium tracking-[0.15em] text-foreground-dim uppercase">{sectionKey}</p>
+        <h3 className="text-sm font-semibold">{label}</h3>
+      </div>
+      <div className="flex items-center gap-1">
+        {(sectionKey === "basics" || sectionKey === "work" || sectionKey === "education" || sectionKey === "skills" || sectionKey === "projects") && (
           <Button
             variant="ghost"
+            size="sm"
             onClick={() => setShowAIEdit(!showAIEdit)}
-            className={`h-8 px-2 text-xs ${showAIEdit ? "text-blue-600" : ""}`}
+            className={`h-8 px-2 text-xs ${showAIEdit ? "text-primary" : ""}`}
           >
-            <Sparkles size={12} className="mr-1" />
+            <Sparkle size={12} weight="light" className="mr-1" />
             AI 编辑
           </Button>
-          <Button variant="ghost" onClick={save} className="h-8 px-2">
-            保存
-          </Button>
-        </div>
-      </div>
-      {showAIEdit && (
-        <div className="border-b border-slate-100 px-3 py-2">
-          <AIEditInput
-            moduleType={module.type}
-            moduleData={module.data as Record<string, unknown>}
-            onResult={(data) => {
-              setDraft(JSON.stringify(data, null, 2));
-              setShowAIEdit(false);
-            }}
-          />
-        </div>
-      )}
-      <div className="p-3">
-        <textarea
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          spellCheck={false}
-          rows={8}
-          className="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs leading-5 text-slate-800 outline-none focus:border-blue-400 focus:bg-white"
-        />
-        {error && <p className="mt-2 text-xs leading-5 text-rose-600">{error}</p>}
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={openJSONTab}
+          className="h-8 px-2 text-xs"
+        >
+          {showJSON ? (
+            <CaretUp size={12} weight="light" className="mr-1" />
+          ) : (
+            <CaretDown size={12} weight="light" className="mr-1" />
+          )}
+          高级
+        </Button>
       </div>
     </div>
   );
-}
 
-function getDataSchema(type: Module["type"]) {
-  switch (type) {
-    case "header":
-      return headerDataSchema;
-    case "summary":
-      return summaryDataSchema;
-    case "work-experience":
-      return workExperienceDataSchema;
-    case "education":
-      return educationDataSchema;
-    case "skills":
-      return skillsDataSchema;
-    case "projects":
-      return projectsDataSchema;
-    case "custom":
-      return customDataSchema;
-  }
-}
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.015]">
+      {titleBar}
 
-function parseJson(value: string):
-  | { ok: true; value: unknown }
-  | { ok: false; error: string } {
-  try {
-    return { ok: true, value: JSON.parse(value) };
-  } catch {
-    return { ok: false, error: "JSON 格式不正确。" };
-  }
+      {showAIEdit && (
+        <div className="border-b border-white/[0.06] px-3 py-2">
+          <AIEditInput
+            sectionKey={sectionKey as "basics" | "work" | "education" | "skills" | "projects"}
+            sectionData={data}
+            onResult={handleAIResult}
+          />
+        </div>
+      )}
+
+      {FormComponent ? (
+        <div className="p-3">
+          <FormComponent data={data} onChange={onChange} />
+        </div>
+      ) : (
+        /* fallback JSON editor */
+        <div className="p-3">
+          <textarea
+            value={jsonDraft || JSON.stringify(data, null, 2)}
+            onChange={(e) => setJsonDraft(e.target.value)}
+            spellCheck={false}
+            rows={6}
+            className="w-full resize-y rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 font-mono text-xs leading-5 outline-none transition-colors focus:border-primary/25"
+          />
+          {jsonError && (
+            <p className="mt-2 text-xs leading-5 text-destructive">{jsonError}</p>
+          )}
+          <div className="mt-2 flex justify-end">
+            <Button onClick={handleJSONApply} size="sm" className="h-7 px-3 text-xs">
+              应用
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {showJSON && FormComponent && (
+        <div className="border-t border-white/[0.06] p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-medium text-foreground-dim">
+              高级：编辑 JSON
+            </span>
+            <Button onClick={handleJSONApply} size="sm" className="h-7 px-3 text-xs">
+              应用
+            </Button>
+          </div>
+          <textarea
+            value={jsonDraft || JSON.stringify(data, null, 2)}
+            onChange={(e) => setJsonDraft(e.target.value)}
+            spellCheck={false}
+            rows={8}
+            className="w-full resize-y rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 font-mono text-xs leading-5 outline-none transition-colors focus:border-primary/25"
+          />
+          {jsonError && (
+            <p className="mt-2 text-xs leading-5 text-destructive">{jsonError}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }

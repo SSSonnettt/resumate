@@ -1,135 +1,420 @@
 "use client";
-import { useEffect, useRef } from "react";
-import { useChatStore } from "@/lib/stores/chat-store";
-import { CheckCircle2, Loader2, Circle, AlertCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle, Spinner, Circle, WarningCircle, Brain, CaretDown, CaretRight, Wrench } from "@phosphor-icons/react";
 import type { HarnessEvent } from "@resumate/shared";
 
 const STAGE_LABELS: Record<string, string> = {
   classify: "识别需求",
+  "analyze-jd": "分析岗位JD",
   collect: "整理信息",
   generate: "生成简历",
+  critic: "审查简历",
+  refine: "精修简历",
   validate: "校验结构",
   present: "准备编辑",
 };
 
-const STAGE_ORDER = ["classify", "collect", "generate", "validate", "present"];
+/** 按管线实际执行顺序排列的所有阶段 */
+const STAGE_ORDER = [
+  "classify",
+  "analyze-jd",
+  "collect",
+  "generate",
+  "critic",
+  "refine",
+  "validate",
+  "present",
+];
 
-export function LogStreamView() {
-  const harnessEvents = useChatStore((s) => s.harnessEvents);
-  const isStreaming = useChatStore((s) => s.isStreaming);
-  const bottomRef = useRef<HTMLDivElement>(null);
+/** 聚合后的单阶段视图 */
+interface StageCard {
+  stepId: string;
+  description: string;
+  status: "pending" | "running" | "done" | "error" | "skipped";
+  /** 本阶段所有 step:chunk 文本拼接 */
+  content: string;
+  /** 本阶段所有 reasoning:chunk 文本拼接 */
+  reasoning: string;
+  /** 本阶段工具调用 */
+  toolCalls: { tool: string; args: unknown }[];
+  error?: string;
+  skipReason?: string;
+}
 
-  const completedStages = new Set(
-    harnessEvents
-      .filter((e) => e.type === "step:done")
-      .map((e) => e.stepId),
+function buildStageCards(events: HarnessEvent[]): StageCard[] {
+  // 按 stepId 分组
+  const groups: Record<
+    string,
+    {
+      description: string;
+      done: boolean;
+      error?: string;
+      skipped?: string;
+      contentChunks: string[];
+      reasoningChunks: string[];
+      toolCalls: { tool: string; args: unknown }[];
+    }
+  > = {};
+
+  for (const e of events) {
+    const sid = (e as { stepId?: string }).stepId;
+    if (!sid) continue;
+
+    if (!groups[sid]) {
+      groups[sid] = {
+        description: "",
+        done: false,
+        contentChunks: [],
+        reasoningChunks: [],
+        toolCalls: [],
+      };
+    }
+
+    switch (e.type) {
+      case "step:start":
+        groups[sid].description = (e as typeof e & { description: string }).description;
+        break;
+      case "step:chunk":
+        groups[sid].contentChunks.push((e as typeof e & { text: string }).text);
+        break;
+      case "reasoning:chunk":
+        groups[sid].reasoningChunks.push((e as typeof e & { text: string }).text);
+        break;
+      case "step:tool_call":
+        groups[sid].toolCalls.push({
+          tool: (e as typeof e & { tool: string }).tool,
+          args: (e as typeof e & { args: unknown }).args,
+        });
+        break;
+      case "step:done":
+        groups[sid].done = true;
+        break;
+      case "step:skipped":
+        groups[sid].skipped = (e as typeof e & { reason: string }).reason;
+        groups[sid].done = true;
+        break;
+      case "step:retry":
+        // 重试表示仍在进行中
+        groups[sid].done = false;
+        break;
+    }
+  }
+
+  // plan:error 可能关联某个 stepId
+  const planError = events.find((e) => e.type === "plan:error") as
+    | (HarnessEvent & { type: "plan:error"; stepId: string; error: string })
+    | undefined;
+
+  // 找出当前正运行的 stageId（有 step:start 但无 step:done）
+  const completedIds = new Set(
+    events.filter((e) => e.type === "step:done").map((e) => (e as { stepId: string }).stepId),
+  );
+  const startedIds = events
+    .filter((e) => e.type === "step:start")
+    .map((e) => (e as { stepId: string }).stepId);
+
+  const runningId = startedIds.findLast((id) => !completedIds.has(id));
+
+  return STAGE_ORDER.map((stepId) => {
+    const g = groups[stepId];
+    if (!g) {
+      return {
+        stepId,
+        description: "",
+        status: "pending" as const,
+        content: "",
+        reasoning: "",
+        toolCalls: [],
+      };
+    }
+
+    const hasPlanError = planError && planError.stepId === stepId;
+    const isDone = g.done || !!g.skipped;
+
+    let status: StageCard["status"];
+    if (g.skipped) status = "skipped";
+    else if (hasPlanError) status = "error";
+    else if (isDone) status = "done";
+    else if (stepId === runningId) status = "running";
+    else status = "pending";
+
+    return {
+      stepId,
+      description: g.description,
+      status,
+      content: g.contentChunks.join(""),
+      reasoning: g.reasoningChunks.join(""),
+      toolCalls: g.toolCalls,
+      error: hasPlanError ? planError.error : undefined,
+      skipReason: g.skipped,
+    };
+  });
+}
+
+export function LogStreamView({
+  harnessEvents,
+  isStreaming = false,
+}: {
+  harnessEvents: HarnessEvent[];
+  isStreaming?: boolean;
+}) {
+  // 跟踪用户手动切换过的面板展开状态
+  const [manualExpanded, setManualExpanded] = useState<Record<string, boolean>>({});
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [expandedReasoning, setExpandedReasoning] = useState<Record<string, boolean>>({});
+
+  const stages = useMemo(() => buildStageCards(harnessEvents), [harnessEvents]);
+
+  // 自动滚动到当前运行中的阶段
+  useEffect(() => {
+    const currentStage = stages.find((s) => s.status === "running");
+    if (currentStage) {
+      const el = document.getElementById(`stage-${currentStage.stepId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [stages]);
+
+  // plan 级别错误（不绑定特定 stepId）
+  const planError = harnessEvents.find((e) => e.type === "plan:error") as
+    | (HarnessEvent & { type: "plan:error"; error: string })
+    | undefined;
+
+  const hasAnyContent = stages.some(
+    (s) => s.content || s.reasoning || s.toolCalls.length > 0 || s.status !== "pending",
   );
 
-  const startedStages = harnessEvents
-    .filter((e) => e.type === "step:start")
-    .map((e) => e.stepId);
+  const toggleReasoning = (stepId: string) => {
+    setExpandedReasoning((prev) => ({ ...prev, [stepId]: !prev[stepId] }));
+  };
 
-  const currentStage = startedStages
-    .filter((id) => !completedStages.has(id))
-    .at(-1);
+  /** 判断阶段面板是否展开 */
+  const getStageExpanded = (stepId: string, status: StageCard["status"]) => {
+    if (stepId in manualExpanded) return manualExpanded[stepId]!;
+    // 默认：running 展开，其他收起
+    return status === "running";
+  };
 
-  const errorEvent = harnessEvents.find(
-    (e) => e.type === "plan:error",
-  ) as (HarnessEvent & { type: "plan:error" }) | undefined;
+  const toggleStage = (stepId: string) => {
+    setManualExpanded((prev) => ({
+      ...prev,
+      [stepId]: !(stepId in prev ? prev[stepId] : getDefaultExpanded(stepId)),
+    }));
+  };
 
-  const events = harnessEvents.filter((e) => e.type !== "step:chunk");
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [events.length]);
+  const getDefaultExpanded = (stepId: string) => {
+    const stage = stages.find((s) => s.stepId === stepId);
+    return stage?.status === "running";
+  };
 
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col px-6 py-8">
-      {/* 阶段进度 */}
-      <div className="mb-6 flex flex-wrap items-center justify-center gap-1.5">
-        {STAGE_ORDER.map((stageId) => {
-          const done = completedStages.has(stageId);
-          const current = stageId === currentStage;
-          return (
-            <span
-              key={stageId}
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                done
-                  ? "bg-green-50 text-green-700"
-                  : current
-                    ? "bg-blue-100 text-blue-700 shadow-sm"
-                    : "bg-slate-100 text-slate-400"
-              }`}
-            >
-              {done ? (
-                <CheckCircle2 size={12} />
-              ) : current ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <Circle size={12} />
-              )}
-              {STAGE_LABELS[stageId] || stageId}
-            </span>
-          );
-        })}
-      </div>
+    <div ref={containerRef} className="flex h-full flex-col gap-3 overflow-y-auto px-3 py-4">
+      {/* 空状态 */}
+      {!hasAnyContent && isStreaming && (
+        <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.015] p-4 text-sm text-foreground-dim">
+          <Spinner size={14} weight="light" className="animate-spin" />
+          AI Agent 启动中...
+        </div>
+      )}
 
-      {/* 日志流 */}
-      <div className="flex-1 overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 font-mono text-sm leading-relaxed text-slate-700">
-        {harnessEvents.length === 0 && isStreaming && (
-          <div className="flex items-center gap-2 text-slate-400">
-            <Loader2 size={14} className="animate-spin" />
-            🤖 AI Agent 启动中...
-          </div>
-        )}
-
-        {events.map((event, index) => (
-          <div key={index} className="mb-2">
-            {event.type === "plan:start" && (
-              <div className="text-slate-400">
-                🚀 启动 Plan: {event.planId}
-              </div>
-            )}
-            {event.type === "step:start" && (
-              <div className="text-blue-600">
-                🔄 开始: {STAGE_LABELS[event.stepId] || event.stepId}
-              </div>
-            )}
-            {event.type === "step:done" && (
-              <div className="text-green-600">
-                ✅ 完成: {STAGE_LABELS[event.stepId] || event.stepId}
-              </div>
-            )}
-            {event.type === "plan:error" && (
-              <div className="rounded bg-red-50 p-2 text-red-700">
-                <AlertCircle size={14} className="inline" /> 错误:{" "}
-                {errorEvent?.error || "未知错误"}
-              </div>
-            )}
-          </div>
+      {/* 按顺序渲染每个阶段 */}
+      {stages
+        .filter((s) => {
+          if (s.status !== "pending") return true;
+          // pending 阶段：有活跃阶段时只显示活跃阶段附近，无活跃时显示全部
+          const activeIdx = stages.findIndex((x) => x.status === "running" || x.status === "done");
+          if (activeIdx === -1) return true;
+          return STAGE_ORDER.indexOf(s.stepId) <= activeIdx + 2;
+        })
+        .map((stage) => (
+          <StageCardNode
+            key={stage.stepId}
+            stage={stage}
+            reasoningExpanded={!!expandedReasoning[stage.stepId]}
+            onToggleReasoning={() => toggleReasoning(stage.stepId)}
+            panelExpanded={getStageExpanded(stage.stepId, stage.status)}
+            onTogglePanel={() => toggleStage(stage.stepId)}
+          />
         ))}
 
-        {errorEvent && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-red-700">
-              <AlertCircle size={16} />
-              生成失败
+      {/* plan 级别错误横幅 */}
+      {planError && (
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/[0.04] p-4">
+          <WarningCircle size={16} weight="light" className="mt-0.5 shrink-0 text-destructive" />
+          <div>
+            <p className="text-sm font-medium text-destructive">生成失败</p>
+            <p className="mt-0.5 text-sm text-destructive/80">{planError.error}</p>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// ======== 单阶段卡片 ========
+function StageCardNode({
+  stage,
+  reasoningExpanded,
+  onToggleReasoning,
+  panelExpanded,
+  onTogglePanel,
+}: {
+  stage: StageCard;
+  reasoningExpanded: boolean;
+  onToggleReasoning: () => void;
+  panelExpanded: boolean;
+  onTogglePanel: () => void;
+}) {
+  const label = STAGE_LABELS[stage.stepId] || stage.stepId;
+  const isEmpty = !stage.content && !stage.reasoning && stage.toolCalls.length === 0;
+  const hasContent = stage.content || stage.reasoning || stage.toolCalls.length > 0;
+
+  // 跳过：无任何内容且已完成（避免显示空白卡片）
+  if (stage.status === "done" && isEmpty) return null;
+
+  return (
+    <div
+      id={`stage-${stage.stepId}`}
+      className={`rounded-xl border transition-colors ${
+        stage.status === "running"
+          ? "border-primary/25 bg-primary/[0.04]"
+          : stage.status === "done"
+            ? "border-white/[0.06] bg-white/[0.015]"
+            : stage.status === "error"
+              ? "border-destructive/20 bg-destructive/[0.04]"
+              : stage.status === "skipped"
+                ? "border-white/[0.04] bg-white/[0.01]"
+                : "border-white/[0.04] bg-white/[0.01]"
+      }`}
+    >
+      {/* 阶段头部 — 可点击切换展开/收起 */}
+      <button
+        type="button"
+        onClick={onTogglePanel}
+        className="flex w-full items-center gap-2.5 px-4 py-3 text-left"
+      >
+        {/* 状态图标 */}
+        {stage.status === "running" ? (
+          <Spinner size={16} weight="light" className="shrink-0 animate-spin text-primary" />
+        ) : stage.status === "done" ? (
+          <CheckCircle size={16} weight="light" className="shrink-0 text-primary" />
+        ) : stage.status === "error" ? (
+          <WarningCircle size={16} weight="light" className="shrink-0 text-destructive" />
+        ) : stage.status === "skipped" ? (
+          <Circle size={16} weight="light" className="shrink-0 text-foreground-muted/25" />
+        ) : (
+          <Circle size={16} weight="light" className="shrink-0 text-foreground-muted/25" />
+        )}
+
+        {/* 阶段名称 */}
+        <span
+          className={`text-sm font-medium ${
+            stage.status === "running"
+              ? "text-primary"
+              : stage.status === "done"
+                ? "text-foreground"
+                : stage.status === "error"
+                  ? "text-destructive"
+                  : "text-foreground-dim"
+          }`}
+        >
+          {label}
+        </span>
+
+        {/* 描述文本 */}
+        {stage.description && (
+          <span className="text-xs text-foreground-dim/50">— {stage.description}</span>
+        )}
+
+        <span className="ml-auto flex items-center gap-1.5">
+          {/* 跳过原因 */}
+          {stage.status === "skipped" && stage.skipReason && (
+            <span className="text-xs text-foreground-dim/50">{stage.skipReason}</span>
+          )}
+
+          {/* 工具调用计数 */}
+          {stage.toolCalls.length > 0 && (
+            <span className="flex items-center gap-1 text-xs text-foreground-dim">
+              <Wrench size={10} weight="light" />
+              {stage.toolCalls.length}
+            </span>
+          )}
+
+          {/* 展开/收起指示 */}
+          {hasContent && (
+            <CaretDown
+              size={14}
+              weight="light"
+              className={`shrink-0 text-foreground-dim transition-transform duration-200 ${
+                panelExpanded ? "" : "-rotate-90"
+              }`}
+            />
+          )}
+        </span>
+      </button>
+
+      {/* 卡片内容：仅展开时显示 */}
+      {hasContent && panelExpanded && (
+        <div className="border-t border-white/[0.06] px-4 py-3">
+          {/* 展开/折叠 reasoning 按钮 */}
+          {stage.reasoning && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleReasoning(); }}
+              className="mb-3 flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs text-foreground-dim transition-colors hover:bg-white/[0.04] hover:text-foreground"
+            >
+              <Brain size={12} weight="light" />
+              {reasoningExpanded ? "收起思考" : "展开思考"}
+              {reasoningExpanded ? <CaretDown size={10} weight="light" /> : <CaretRight size={10} weight="light" />}
+            </button>
+          )}
+          {/* 思考过程 — 可折叠 */}
+          {stage.reasoning && reasoningExpanded && (
+            <div className="mb-3 rounded-xl border border-primary/10 bg-primary/[0.03] p-3">
+              <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-primary/80">
+                <Brain size={12} weight="light" />
+                思考过程
+              </div>
+              <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-foreground-dim">
+                {stage.reasoning}
+              </pre>
             </div>
-            <p className="mt-1 text-sm text-red-600">
-              {errorEvent.error || "未知错误，请重试或返回上一步补充信息"}
-            </p>
-          </div>
-        )}
+          )}
 
-        {isStreaming && (
-          <div className="mt-2 flex items-center gap-2 text-slate-400">
-            <Loader2 size={14} className="animate-spin" />
-            生成中...
-          </div>
-        )}
+          {/* 工具调用列表 */}
+          {stage.toolCalls.length > 0 && (
+            <div className="mb-3 space-y-1.5">
+              {stage.toolCalls.map((tc, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-secondary/15 bg-secondary/[0.04] px-3 py-2"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-secondary/80">
+                    <Wrench size={10} weight="light" />
+                    调用工具: {tc.tool}
+                  </div>
+                  <pre className="mt-1 max-h-24 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-secondary/60 opacity-80">
+                    {JSON.stringify(tc.args, null, 2)}
+                  </pre>
+                </div>
+              ))}
+            </div>
+          )}
 
-        <div ref={bottomRef} />
-      </div>
+          {/* 生成文本内容 */}
+          {stage.content && (
+            <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-foreground/70">
+              {stage.content}
+            </pre>
+          )}
+
+          {/* 错误信息 */}
+          {stage.status === "error" && stage.error && (
+            <p className="mt-2 text-xs text-destructive/80">{stage.error}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

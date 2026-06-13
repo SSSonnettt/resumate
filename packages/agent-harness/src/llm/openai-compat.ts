@@ -24,9 +24,25 @@ export class OpenAICompatProvider implements LLMProvider {
   }
 
   async streamChat(
-    params: { messages: ChatMessage[]; temperature?: number },
-    onChunk: (chunk: string) => void,
+    params: { messages: ChatMessage[]; temperature?: number; thinking?: { type: "enabled" | "disabled" } },
+    onChunk: (chunk: { type: "text" | "reasoning"; content: string }) => void,
   ): Promise<string> {
+    const body: Record<string, unknown> = {
+      model: this.model,
+      messages: params.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+      temperature: params.temperature ?? 0.7,
+      max_tokens: 4096,
+      stream: true,
+    };
+
+    // DeepSeek think mode
+    if (params.thinking) {
+      body.thinking = params.thinking;
+    }
+
     const response = await fetch(`${this.baseURL}/chat/completions`, {
       method: "POST",
       headers: {
@@ -34,16 +50,7 @@ export class OpenAICompatProvider implements LLMProvider {
         Authorization: `Bearer ${this.apiKey}`,
         Accept: "text/event-stream",
       },
-      body: JSON.stringify({
-        model: this.model,
-        messages: params.messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        temperature: params.temperature ?? 0.7,
-        max_tokens: 4096,
-        stream: true,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -79,10 +86,17 @@ export class OpenAICompatProvider implements LLMProvider {
 
         try {
           const parsed = JSON.parse(data);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (typeof content === "string") {
-            fullText += content;
-            onChunk(content);
+          const delta = parsed.choices?.[0]?.delta;
+
+          // 先发送 reasoning_content（思考过程）
+          if (typeof delta?.reasoning_content === "string") {
+            onChunk({ type: "reasoning", content: delta.reasoning_content });
+          }
+
+          // 再发送 content（正式回复）
+          if (typeof delta?.content === "string") {
+            fullText += delta.content;
+            onChunk({ type: "text", content: delta.content });
           }
         } catch {
           // 跳过无法解析的行
@@ -97,6 +111,7 @@ export class OpenAICompatProvider implements LLMProvider {
     messages: ChatMessage[];
     schema: z.ZodType<unknown>;
     temperature?: number;
+    thinking?: { type: "enabled" | "disabled" };
   }): Promise<T> {
     const jsonSchema = zodToJsonSchema(params.schema, {
       $refStrategy: "none",
@@ -129,22 +144,29 @@ export class OpenAICompatProvider implements LLMProvider {
       }
     }
 
+    const body: Record<string, unknown> = {
+      model: this.model,
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+      temperature: params.temperature ?? 0.2,
+      max_tokens: 16384, // 完整简历 JSON 需要较大的 token 预算
+      response_format: { type: "json_object" },
+    };
+
+    // DeepSeek think mode
+    if (params.thinking) {
+      body.thinking = params.thinking;
+    }
+
     const response = await fetch(`${this.baseURL}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.apiKey}`,
       },
-      body: JSON.stringify({
-        model: this.model,
-        messages: messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        temperature: params.temperature ?? 0.2,
-        max_tokens: 4096,
-        response_format: { type: "json_object" },
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -162,14 +184,68 @@ export class OpenAICompatProvider implements LLMProvider {
       throw new Error("AI 返回了空响应，请检查 API Key 和模型配置");
     }
 
-    // 提取 JSON 对象
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error(
-        `AI 返回的内容不包含 JSON，请重试。内容前200字符: ${text.slice(0, 200)}`,
-      );
-    }
-
-    return JSON.parse(jsonMatch[0]) as unknown as T;
+    return parseJSONResponse(text) as unknown as T;
   }
+}
+
+/**
+ * 从 LLM 响应中解析 JSON，带修复重试。
+ * LLM（尤其是 DeepSeek）有时会生成有细微语法错误的 JSON。
+ */
+function parseJSONResponse(text: string): unknown {
+  // 尝试1：直接匹配最外层 JSON 对象
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error(
+      `AI 返回的内容不包含 JSON 对象。内容前200字符: ${text.slice(0, 200)}`,
+    );
+  }
+
+  let raw = jsonMatch[0];
+
+  // 尝试2：直接解析
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // 继续尝试修复
+  }
+
+  // 尝试3：修复常见 JSON 问题
+  const repaired = repairJSON(raw);
+  try {
+    return JSON.parse(repaired);
+  } catch (e) {
+    const err = e instanceof SyntaxError ? e.message : String(e);
+    // 标记错误位置附近的上下文
+    const posMatch = err.match(/position (\d+)/);
+    const pos = posMatch ? parseInt(posMatch[1], 10) : 0;
+    const context = raw.slice(Math.max(0, pos - 80), pos + 80);
+    throw new Error(
+      `AI 返回的 JSON 格式有误，无法修复：${err}\n错误位置附近: ...${context}...`,
+    );
+  }
+}
+
+/**
+ * 修复 LLM 常见的 JSON 格式错误：
+ * - 数组/对象末尾多余逗号
+ * - 缺少引号的 key
+ * - 单引号替代双引号
+ */
+function repairJSON(raw: string): string {
+  let repaired = raw;
+
+  // 移除末尾多余逗号（对象和数组中的 trailing comma）
+  // 例如: {"a": 1,} → {"a": 1}
+  repaired = repaired.replace(/,(\s*[}\]])/g, "$1");
+
+  // 修复缺少逗号的情况：}\n 或 ]\n 后直接跟 "key" 或 {
+  // 例如: {"a": 1}\n{"b": 2} → 这种情况不太可能，跳过
+
+  // 修复单引号 key（LLM 偶尔用单引号）
+  // 例如: {'key': 'value'} → {"key": "value"}
+  // 仅在确认是 key 位置时替换
+  repaired = repaired.replace(/'([^']+)'(\s*):/g, '"$1"$2:');
+
+  return repaired;
 }

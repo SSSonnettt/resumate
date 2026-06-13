@@ -2,18 +2,155 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    /* ======== Ethereal Glass — OLED Black Base ======== */
+    --background: 240 20% 2%;
+    --foreground: 240 15% 92%;
+    --foreground-dim: 240 10% 70%;
+    --foreground-muted: 240 8% 48%;
+
+    --card: 240 10% 6%;
+    --card-rgb: 15 15 20;
+    --card-foreground: 240 15% 92%;
+
+    --popover: 240 12% 8%;
+    --popover-foreground: 240 15% 92%;
+
+    /* 主色：冰蓝 */
+    --primary: 225 80% 66%;
+    --primary-foreground: 240 10% 98%;
+    --primary-glow: 225 80% 66% / 0.15;
+
+    /* 辅助色：温热紫 */
+    --secondary: 264 60% 62%;
+    --secondary-foreground: 240 10% 98%;
+
+    --accent: 240 15% 12%;
+    --accent-foreground: 240 15% 92%;
+
+    --muted: 240 12% 10%;
+    --muted-foreground: 240 8% 48%;
+
+    --destructive: 0 72% 56%;
+    --destructive-foreground: 240 10% 98%;
+
+    /* ======== 边框系统（不透明度驱动） ======== */
+    --border: 240 10% 100% / 0.08;
+    --border-hover: 240 10% 100% / 0.14;
+    --border-active: 225 80% 66% / 0.3;
+
+    --input: 240 10% 100% / 0.06;
+    --input-focus: 225 80% 66% / 0.25;
+
+    --ring: 225 80% 66% / 0.35;
+
+    /* ======== 圆角 ======== */
+    --radius: 0.75rem;
+    --radius-card: 1.5rem;
+    --radius-shell: 2rem;
+
+    /* ======== Chart ======== */
+    --chart-1: 225 80% 66%;
+    --chart-2: 264 60% 62%;
+    --chart-3: 180 60% 52%;
+    --chart-4: 340 65% 60%;
+    --chart-5: 40 80% 60%;
+
+    /* ======== Sidebar ======== */
+    --sidebar-background: 240 12% 4%;
+    --sidebar-foreground: 240 10% 80%;
+    --sidebar-primary: 225 80% 66%;
+    --sidebar-primary-foreground: 240 10% 98%;
+    --sidebar-accent: 240 12% 10%;
+    --sidebar-accent-foreground: 240 15% 92%;
+    --sidebar-border: 240 10% 100% / 0.06;
+    --sidebar-ring: 225 80% 66% / 0.3;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ======== 滚动条 ======== */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(240 10% 100% / 0.08);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(240 10% 100% / 0.14);
+  }
+}
+
+/* ======== 光晕系统 ======== */
+@layer components {
+  .glow-primary {
+    background: radial-gradient(
+      ellipse 60% 50% at 50% 0%,
+      hsl(225 80% 66% / 0.08) 0%,
+      transparent 70%
+    );
+  }
+  .glow-secondary {
+    background: radial-gradient(
+      ellipse 50% 60% at 100% 100%,
+      hsl(264 60% 62% / 0.05) 0%,
+      transparent 70%
+    );
+  }
+}
+
+/* ======== Noise Overlay ======== */
+@layer components {
+  .noise-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+  }
+}
+
+/* ======== 打印模式 ======== */
 @media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
   body.print-mode {
     background: white;
   }
-
-  body.print-mode header,
-  body.print-mode aside {
-    display: none;
+  body.print-mode .a4-page {
+    break-after: page;
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    width: 210mm;
+    min-height: 297mm;
+    contain: none;
   }
-
-  body.print-mode #resume-preview {
-    width: 100% !important;
-    min-height: auto !important;
+  body.print-mode header,
+  body.print-mode nav,
+  body.print-mode aside,
+  body.print-mode button,
+  body.print-mode .page-gap {
+    display: none;
   }
 }

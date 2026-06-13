@@ -1,88 +1,86 @@
 "use client";
 import { useResumeStore } from "@/lib/stores/resume-store";
-import { templates } from "@/lib/templates";
+import { templates, getTemplate } from "@/lib/templates";
 import type { Theme } from "@resumate/shared";
-import { ModuleDataEditor } from "./module-data-editor";
 
 export function StylePanel() {
-  const { resume, setTheme } = useResumeStore();
+  const resumeTheme = useResumeStore((state) => state.resume.theme);
+  const setTheme = useResumeStore((state) => state.setTheme);
+  const setTemplate = useResumeStore((state) => state.setTemplate);
+
+  const currentTemplate = getTemplate(resumeTheme.templateId);
 
   return (
-    <div className="space-y-5 p-4">
-      <section className="rounded-lg border border-slate-200 bg-white">
-        <div className="border-b border-slate-100 px-4 py-3">
-          <h3 className="text-sm font-semibold text-slate-900">样式系统</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            控制模板、主色、字号和段落密度。
+    <div className="space-y-5">
+      <section className="overflow-hidden rounded-[1.75rem] border border-white/[0.06] bg-white/[0.02]">
+        <div className="border-b border-white/[0.06] px-4 py-3">
+          <h3 className="text-sm font-semibold">样式系统</h3>
+          <p className="mt-1 text-xs text-foreground-dim">
+            切换模板或微调颜色与字体。
           </p>
         </div>
         <div className="space-y-5 p-4">
-
+          {/* 模板选择 */}
           <div>
-            <label className="mb-2 block text-xs font-medium text-slate-500">
+            <label className="mb-2 block text-xs font-medium text-foreground-dim">
               模板
             </label>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {templates.map((template) => (
                 <button
                   key={template.id}
-                  onClick={() => {
-                    const { templateId: _, ...rest } = template.defaults;
-                    setTheme({ templateId: template.id, ...rest });
-                  }}
-                  className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                    resume.theme.templateId === template.id
-                      ? "border-blue-300 bg-blue-50 text-blue-700"
-                      : "border-slate-200 hover:border-slate-300"
+                  onClick={() => setTemplate(template.id)}
+                  className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+                    resumeTheme.templateId === template.id
+                      ? "border-primary/20 bg-primary/[0.06] text-primary"
+                      : "border-white/[0.06] bg-white/[0.02] text-foreground-dim hover:bg-white/[0.04]"
                   }`}
                 >
-                  {template.name}
+                  {template.nameZh || template.name}
                 </button>
               ))}
             </div>
           </div>
 
+          {/* 主色 */}
           <label className="block">
-            <span className="mb-2 block text-xs font-medium text-slate-500">
+            <span className="mb-2 block text-xs font-medium text-foreground-dim">
               主色
             </span>
             <input
               type="color"
-              value={resume.theme.primaryColor}
-              onChange={(event) => setTheme({ primaryColor: event.target.value })}
-              className="h-9 w-full cursor-pointer rounded-md border border-slate-200 bg-white"
+              value={resumeTheme.colors.primary}
+              onChange={(event) =>
+                setTheme({ colors: { ...resumeTheme.colors, primary: event.target.value } })
+              }
+              className="h-9 w-full cursor-pointer rounded-xl border border-white/[0.06] bg-white/[0.02]"
             />
           </label>
 
+          {/* 字体 */}
           <SelectField
             label="字体"
-            value={resume.theme.fontFamily}
+            value={resumeTheme.typography.fontFamily}
             onChange={(value) =>
-              setTheme({ fontFamily: value as Theme["fontFamily"] })
+              setTheme({
+                typography: {
+                  ...resumeTheme.typography,
+                  fontFamily: value as Theme["typography"]["fontFamily"],
+                },
+              })
             }
             options={[
               ["sans", "无衬线"],
               ["serif", "衬线"],
               ["kai", "楷体"],
+              ["mono", "等宽"],
             ]}
           />
 
-          <SelectField
-            label="字号"
-            value={resume.theme.fontSize}
-            onChange={(value) =>
-              setTheme({ fontSize: value as Theme["fontSize"] })
-            }
-            options={[
-              ["small", "小"],
-              ["medium", "中"],
-              ["large", "大"],
-            ]}
-          />
-
+          {/* 间距 */}
           <SelectField
             label="间距"
-            value={resume.theme.spacing}
+            value={resumeTheme.spacing}
             onChange={(value) =>
               setTheme({ spacing: value as Theme["spacing"] })
             }
@@ -92,24 +90,15 @@ export function StylePanel() {
               ["loose", "宽松"],
             ]}
           />
-        </div>
-      </section>
 
-      <section>
-        <div className="mb-3">
-          <h3 className="text-sm font-semibold text-slate-900">模块内容</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            MVP 阶段使用 JSON 做模块级快速编辑。
-          </p>
-        </div>
-        <div className="space-y-3">
-          {resume.modules.map((module) => (
-            <ModuleDataEditor key={`${module.id}-${module.order}`} module={module} />
-          ))}
-          {resume.modules.length === 0 && (
-            <p className="rounded-lg border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-sm text-slate-400">
-              生成或添加模块后可在这里编辑内容。
-            </p>
+          {/* 恢复默认 */}
+          {currentTemplate && (
+            <button
+              onClick={() => setTemplate(currentTemplate.id)}
+              className="w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs text-foreground-dim transition-colors hover:bg-white/[0.04]"
+            >
+              恢复模板默认
+            </button>
           )}
         </div>
       </section>
@@ -130,16 +119,16 @@ function SelectField({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-xs font-medium text-slate-500">
+      <span className="mb-2 block text-xs font-medium text-foreground-dim">
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-700 outline-none focus:border-blue-400"
+        className="h-9 w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 text-sm outline-none transition-colors focus:border-primary/25"
       >
         {options.map(([optionValue, optionLabel]) => (
-          <option key={optionValue} value={optionValue}>
+          <option key={optionValue} value={optionValue} className="bg-background">
             {optionLabel}
           </option>
         ))}

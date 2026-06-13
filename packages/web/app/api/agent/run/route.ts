@@ -4,11 +4,15 @@ import {
   AnthropicProvider,
   OpenAICompatProvider,
   createBuiltInTools,
+  HookManager,
+  createTokenBudgetHook,
+  createSafetyFilterHook,
+  createLoggingHook,
 } from "@resumate/agent-harness";
 import type { LLMProvider } from "@resumate/agent-harness";
 import type { Plan } from "@resumate/agent-harness";
 import {
-  normalizeResumeOrder,
+  jsonResumeSchema,
   resumeSchema,
   type HarnessEvent,
 } from "@resumate/shared";
@@ -25,6 +29,7 @@ const runRequestSchema = z.object({
       content: z.string(),
     }),
   ),
+  fileContents: z.array(z.string()).optional(),
 });
 
 const systemPrompt = [
@@ -34,12 +39,33 @@ const systemPrompt = [
   "使用用户在对话中提供的真实信息——姓名、公司、学校、时间等都应该来自对话记录。",
   "如果用户在对话中确实未提供某些信息（如联系方式、某些技能细节），可以留空或用 [待补充] 标记，",
   "但主要经历和技能必须来自用户真实输入，不得编造。",
-  "输出必须严格符合 JSON Schema。",
+  "输出必须严格符合 JSON Resume 标准格式 (https://jsonresume.org/schema/)。",
 ].join("\n");
 
-function createResumeGenerationPlan(messages: Array<{ role: string; content: string }>): Plan {
-  const lastMessage = messages.at(-1)?.content ?? "";
+function createResumeGenerationPlan(
+  messages: Array<{ role: string; content: string }>,
+  fileContents?: string[],
+): Plan {
   const userContext = JSON.stringify(messages, null, 2);
+
+  // 将上传文件的解析文本注入 collect 步骤的 prompt
+  const fileContext = (fileContents || []).length > 0
+    ? "\n\n" + fileContents!.map((text, i) => `[上传文件 #${i + 1} 的解析文本，全文如下]\n${text}`).join("\n\n")
+    : "";
+
+  // classify 步骤的输入：汇总聊天收集阶段的所有对话信息（用户+AI 分析）
+  const collectedInput = messages
+    .map((m) => m.content)
+    .join("\n\n");
+
+  const classifyInput = (fileContents || []).length > 0
+    ? fileContents!.map((text, i) => `[已上传文件 #${i + 1}，共 ${text.length} 字符]`).join("\n") + "\n" + collectedInput
+    : collectedInput;
+
+  // analyze-jd 步骤使用用户最后一条消息（通常包含 JD 文本）
+  const lastUserMessage = messages
+    .filter((m) => m.role === "user")
+    .at(-1)?.content ?? "";
 
   return {
     id: "jd-tailored-resume-generation",
@@ -49,13 +75,17 @@ function createResumeGenerationPlan(messages: Array<{ role: string; content: str
         type: "tool" as const,
         description: "识别用户当前输入意图",
         tool: "classifyIntent",
-        toolArgs: { input: lastMessage },
+        toolArgs: { input: classifyInput },
       },
       {
         id: "analyze-jd",
         type: "chat" as const,
         description: "深度分析岗位 JD",
         dependsOn: ["classify"],
+        condition: ({ stepResults }) => {
+          const classify = stepResults.classify as { intent?: string } | undefined;
+          return classify?.intent === "jd_optimize";
+        },
         systemPrompt: [
           "你是 JD 分析专家。从岗位描述中提取关键信息，输出简洁的结构化分析。",
           "必须覆盖：",
@@ -66,7 +96,7 @@ function createResumeGenerationPlan(messages: Array<{ role: string; content: str
           "5. 简历应突出的 3 个核心方向",
           "只输出分析结果，不要客套话。",
         ].join("\n"),
-        userPromptTemplate: `请分析以下岗位描述：\n\n${lastMessage}`,
+        userPromptTemplate: `请分析以下岗位描述：\n\n${lastUserMessage}`,
       },
       {
         id: "collect",
@@ -74,35 +104,39 @@ function createResumeGenerationPlan(messages: Array<{ role: string; content: str
         description: "整理已收集信息",
         dependsOn: ["analyze-jd"],
         systemPrompt:
-          "你是中文求职简历向导。总结用户在对话中提供的所有个人信息（不编造），并确认信息足够后告知可以开始生成。如用户信息有缺失，列出缺失项但不编造。",
-        userPromptTemplate: userContext,
+          "你是中文简历信息整理专家。从对话记录中提取用户提供的所有个人信息，按以下结构输出：\n1. 基本信息（姓名、求职意向、联系方式）\n2. 工作经历（公司、职位、时间、描述和成果）\n3. 教育背景（学校、学历、专业、时间）\n4. 技能标签（语言、框架、工具）\n5. 项目经历（名称、描述、技术栈）\n6. 其他补充\n只输出用户明确提供的信息，未提供的信息标注'未提供'。不编造任何信息。",
+        userPromptTemplate: userContext + fileContext,
       },
       {
         id: "generate",
         type: "structured" as const,
         description: "生成岗位定制中文简历",
         dependsOn: ["analyze-jd", "collect"],
-        schema: resumeSchema,
+        maxRetries: 2,
+        schema: jsonResumeSchema,
         systemPrompt,
         userPromptTemplate: ({ stepResults }) => {
           const jdAnalysis =
             (stepResults["analyze-jd"] as { text?: string } | undefined)?.text ?? "";
+          const collectOutput =
+            (stepResults.collect as { text?: string } | undefined)?.text;
+          const userInfo = collectOutput || userContext;
           return [
             "请基于以下信息生成一份完整的中文简历 JSON。",
             "",
             "## JD 深度分析",
             jdAnalysis,
             "",
-            "## 对话记录（用户真实信息）",
-            userContext,
+            "## 用户信息整理",
+            userInfo,
             "",
             "## 核心要求",
             "1. 严格基于 JD 分析中的关键词和方向来组织内容",
-            "2. 使用对话记录中用户的真实信息（姓名、公司、学校等）",
+            "2. 使用已整理的用户的真实信息（姓名、公司、学校等）",
             "3. 用户未提供的细节可留空或标记 [待补充]，不得编造",
-            "4. header/summary/work-experience/skills 为必填，education/projects 也需生成",
-            "5. 每个模块 id 为稳定字符串；order 从 0 递增；visible 为 true",
-            "6. summary 要体现与目标岗位的匹配度",
+            "4. basics/education/skills 为必填，work/projects 也需生成",
+            "5. summary 要体现与目标岗位的匹配度",
+            "6. 严格输出 JSON Resume 标准格式，不要有额外字段",
           ].join("\n\n");
         },
       },
@@ -129,11 +163,16 @@ function createResumeGenerationPlan(messages: Array<{ role: string; content: str
         type: "structured" as const,
         description: "精修简历问题",
         dependsOn: ["generate", "critic"],
-        schema: resumeSchema,
+        maxRetries: 2,
+        condition: ({ stepResults }) => {
+          const criticResult = (stepResults.critic as { text?: string } | undefined)?.text ?? "";
+          return criticResult.length > 20;
+        },
+        schema: jsonResumeSchema,
         systemPrompt: [
           "你是简历润色专家。基于审查意见修复简历。",
           "关键原则：只修改被标记的部分，未标记的内容必须保持原样，一个字都不改。",
-          "输出完整的修复后 Resume JSON。",
+          "输出完整的修复后 JSON Resume 格式数据。",
         ].join("\n"),
         userPromptTemplate: ({ stepResults }) => {
           const criticResult =
@@ -155,17 +194,53 @@ function createResumeGenerationPlan(messages: Array<{ role: string; content: str
         description: "校验简历结构",
         dependsOn: ["refine"],
         tool: "validateResume",
-        toolArgs: ({ stepResults }) => ({
-          resume: stepResults.refine,
-        }),
+        toolArgs: ({ stepResults }) => {
+          const refineResult = stepResults.refine as Record<string, unknown> | undefined;
+          const resume = (refineResult?.skipped ? stepResults.generate : stepResults.refine);
+          return { resume };
+        },
       },
       {
         id: "present",
         type: "compose" as const,
         description: "输出最终简历",
         dependsOn: ["validate"],
-        compose: ({ stepResults }) =>
-          normalizeResumeOrder(resumeSchema.parse(stepResults.refine)),
+        compose: ({ stepResults }) => {
+          const refineResult = stepResults.refine as Record<string, unknown> | undefined;
+          const bestCandidate = (refineResult?.skipped ? stepResults.generate : stepResults.refine);
+          // 将 JSON Resume 数据包装为 Resume 格式
+          const wrapResume = (data: unknown) => {
+            const parsed = jsonResumeSchema.safeParse(data);
+            if (parsed.success) {
+              return resumeSchema.parse({
+                id: "generated",
+                data: parsed.data,
+                theme: {
+                  templateId: "minimal-professional",
+                  colors: { primary: "#1e293b", primaryLight: "#475569", primaryDark: "#0f172a", accent: "#2563eb", background: "#ffffff", surface: "#f8fafc", textPrimary: "#0f172a", textSecondary: "#475569", textMuted: "#94a3b8", border: "#e2e8f0", divider: "#cbd5e1" },
+                  typography: { fontFamily: "sans", scale: { h1: "text-3xl leading-10 font-bold", h2: "text-xs leading-5 font-semibold uppercase tracking-[0.2em]", h3: "text-sm leading-5 font-semibold", body: "text-sm leading-6", small: "text-xs leading-5", caption: "text-[10px] leading-4" } },
+                  spacing: "normal",
+                },
+              });
+            }
+            return null;
+          };
+          const wrapped = wrapResume(bestCandidate);
+          if (wrapped) return wrapped;
+          const fallback = wrapResume(stepResults.generate);
+          if (fallback) return fallback;
+          console.warn("present: all candidates failed, returning empty fallback");
+          return resumeSchema.parse({
+            id: "fallback",
+            data: {},
+            theme: {
+              templateId: "minimal-professional",
+              colors: { primary: "#1e293b", primaryLight: "#475569", primaryDark: "#0f172a", accent: "#2563eb", background: "#ffffff", surface: "#f8fafc", textPrimary: "#0f172a", textSecondary: "#475569", textMuted: "#94a3b8", border: "#e2e8f0", divider: "#cbd5e1" },
+              typography: { fontFamily: "sans", scale: { h1: "text-3xl leading-10 font-bold", h2: "text-xs leading-5 font-semibold uppercase tracking-[0.2em]", h3: "text-sm leading-5 font-semibold", body: "text-sm leading-6", small: "text-xs leading-5", caption: "text-[10px] leading-4" } },
+              spacing: "normal",
+            },
+          });
+        },
       },
     ],
   };
@@ -184,16 +259,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { messages, apiKey, provider, baseURL, model } = parsed.data;
+  const { messages, apiKey, provider, baseURL, model, fileContents } = parsed.data;
   const llmProvider = createLLMProvider({ provider, apiKey, baseURL, model });
   const registry = createBuiltInTools();
-  const runner = new AgentRunner(llmProvider, registry);
+  const hooks = new HookManager();
+  hooks.register(createTokenBudgetHook(200000));
+  hooks.register(createSafetyFilterHook({ contextAware: true }));
+  hooks.register(createLoggingHook());
+  const runner = new AgentRunner(llmProvider, registry, hooks);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const plan = createResumeGenerationPlan(messages);
+        const plan = createResumeGenerationPlan(messages, fileContents);
 
         for await (const event of runner.execute(plan, { messages })) {
           controller.enqueue(encoder.encode(encodeSSE(event)));

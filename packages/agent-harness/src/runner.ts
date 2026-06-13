@@ -1,7 +1,9 @@
 import type { Resume, HarnessEvent } from "@resumate/shared";
 import type { z } from "zod";
-import type { LLMProvider, ChatMessage } from "./llm";
+import type { LLMProvider, ChatMessage, StreamChunk } from "./llm";
+import type { HookManager } from "./hooks";
 import { ToolRegistry } from "./tool-registry";
+import { AsyncStreamQueue } from "./async-stream-queue";
 
 export interface StepRuntime {
   context: Record<string, unknown>;
@@ -21,6 +23,9 @@ export interface PlanStep {
   userPromptTemplate?: RuntimeValue<string>;
   schema?: z.ZodType<unknown>;
   compose?: RuntimeValue<Resume>;
+  condition?: RuntimeValue<boolean>;
+  onFail?: string[];
+  maxRetries?: number;
 }
 
 export interface Plan {
@@ -31,10 +36,15 @@ export interface Plan {
 export class AgentRunner {
   private registry: ToolRegistry;
   private provider: LLMProvider;
+  private hooks?: HookManager;
 
-  constructor(provider: LLMProvider, registry: ToolRegistry) {
+  /** 单次 onFail 跳转最大次数，防止无限循环 */
+  private static readonly MAX_ONFAIL_JUMPS = 3;
+
+  constructor(provider: LLMProvider, registry: ToolRegistry, hooks?: HookManager) {
     this.provider = provider;
     this.registry = registry;
+    this.hooks = hooks;
   }
 
   async *execute(
@@ -43,9 +53,25 @@ export class AgentRunner {
   ): AsyncGenerator<HarnessEvent> {
     yield { type: "plan:start", planId: plan.id };
 
-    const stepResults: Record<string, unknown> = {};
+    // beforePlan hook
+    if (this.hooks) {
+      const result = await this.hooks.executeHooks("beforePlan", { planId: plan.id });
+      if (result.action === "block") {
+        yield { type: "hook:block", hookName: "beforePlan", reason: result.reason };
+        return;
+      }
+    }
 
-    for (const step of plan.steps) {
+    const stepResults: Record<string, unknown> = {};
+    const steps = plan.steps;
+    /** 记录每个步骤通过 onFail 跳转的次数，防止无限循环 */
+    const stepExecutionCount = new Map<string, number>();
+
+    let i = 0;
+    while (i < steps.length) {
+      const step = steps[i];
+
+      // 依赖检查
       const missingDep = step.dependsOn?.find((dep) => !(dep in stepResults));
       if (missingDep) {
         yield {
@@ -56,13 +82,47 @@ export class AgentRunner {
         return;
       }
 
+      const runtime = { context, stepResults };
+
+      // condition 检查
+      const shouldRun = resolveRuntimeValue(step.condition, runtime) ?? true;
+      if (!shouldRun) {
+        stepResults[step.id] = { skipped: true };
+        yield { type: "step:skipped", stepId: step.id, reason: "条件不满足，跳过" };
+        i++;
+        continue;
+      }
+
+      // beforeStep hook
+      if (this.hooks) {
+        const hookResult = await this.hooks.executeHooks("beforeStep", {
+          planId: plan.id,
+          stepId: step.id,
+          stepType: step.type,
+          stepResults,
+        });
+        if (hookResult.action === "block") {
+          yield {
+            type: "hook:block",
+            hookName: "beforeStep",
+            stepId: step.id,
+            reason: hookResult.reason,
+          };
+          return;
+        }
+      }
+
       yield {
         type: "step:start",
         stepId: step.id,
         description: step.description ?? `执行: ${step.id}`,
       };
 
-      const runtime = { context, stepResults };
+      // 递增执行计数（用于循环防护）
+      const execCount = (stepExecutionCount.get(step.id) ?? 0) + 1;
+      stepExecutionCount.set(step.id, execCount);
+
+      const startTime = Date.now();
 
       try {
         switch (step.type) {
@@ -86,21 +146,38 @@ export class AgentRunner {
 
           case "chat": {
             let fullText = "";
+            let fullReasoning = "";
             const messages = createMessages(step, runtime, {
               fallbackSystem: "你是一位专业的中文求职顾问。",
               fallbackUser: "请继续。",
             });
 
-            await this.provider.streamChat({ messages }, (chunk) => {
-              fullText += chunk;
-            });
+            // 使用 AsyncStreamQueue 桥接回调 → async iterator，实现逐 chunk 实时 yield
+            const queue = new AsyncStreamQueue<StreamChunk>();
+            const streamPromise = this.provider
+              .streamChat({ messages, thinking: { type: "enabled" } }, (chunk) => {
+                queue.push(chunk);
+                if (chunk.type === "reasoning") {
+                  fullReasoning += chunk.content;
+                } else {
+                  fullText += chunk.content;
+                }
+              })
+              .then(() => queue.close())
+              .catch((err) => queue.setError(err instanceof Error ? err : new Error(String(err))));
 
-            // Provider callbacks are sync-only, so emit the aggregated chunk once.
-            if (fullText) {
-              yield { type: "step:chunk", stepId: step.id, text: fullText };
+            for await (const chunk of queue) {
+              if (chunk.type === "reasoning") {
+                yield { type: "reasoning:chunk", stepId: step.id, text: chunk.content };
+              } else {
+                yield { type: "step:chunk", stepId: step.id, text: chunk.content };
+              }
             }
 
-            const result = { text: fullText };
+            // 等待 streamChat Promise 完成以捕获潜在错误
+            await streamPromise;
+
+            const result = { text: fullText, reasoning: fullReasoning || undefined };
             stepResults[step.id] = result;
             yield { type: "step:done", stepId: step.id, result };
             break;
@@ -110,15 +187,47 @@ export class AgentRunner {
             if (!step.schema) {
               throw new Error(`步骤 ${step.id} 缺少 schema`);
             }
-            const messages = createMessages(step, runtime, {
-              fallbackSystem: "根据用户信息生成结构化简历 JSON。",
-              fallbackUser: JSON.stringify(context),
-            });
 
-            const result = await this.provider.generateStructured({
-              messages,
-              schema: step.schema,
-            });
+            const maxRetries = step.maxRetries ?? 1;
+            let lastError: Error | null = null;
+            let result: unknown = null;
+
+            for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+              try {
+                const messages = createMessages(step, runtime, {
+                  fallbackSystem: "根据用户信息生成结构化简历 JSON。",
+                  fallbackUser: JSON.stringify(context),
+                });
+
+                // 如果是重试，将错误信息追加到 user prompt
+                if (lastError && attempt > 1) {
+                  messages.push({
+                    role: "user",
+                    content: `上一次生成的 JSON 有格式错误，请修正：${lastError.message}`,
+                  });
+                }
+
+                result = await this.provider.generateStructured({
+                  messages,
+                  schema: step.schema,
+                  thinking: { type: "enabled" },
+                });
+                lastError = null;
+                break; // 成功
+              } catch (err) {
+                lastError = err instanceof Error ? err : new Error(String(err));
+                if (attempt <= maxRetries) {
+                  yield {
+                    type: "step:retry",
+                    stepId: step.id,
+                    attempt,
+                    error: lastError.message,
+                  };
+                }
+              }
+            }
+
+            if (lastError) throw lastError;
             stepResults[step.id] = result;
             yield { type: "step:done", stepId: step.id, result };
             break;
@@ -140,7 +249,45 @@ export class AgentRunner {
             break;
           }
         }
+
+        // afterStep hook
+        if (this.hooks) {
+          const duration = Date.now() - startTime;
+          const hookResult = await this.hooks.executeHooks("afterStep", {
+            planId: plan.id,
+            stepId: step.id,
+            stepType: step.type,
+            stepResult: stepResults[step.id],
+            stepResults,
+            duration,
+          });
+          if (hookResult.action === "block") {
+            yield {
+              type: "hook:block",
+              hookName: "afterStep",
+              stepId: step.id,
+              reason: hookResult.reason,
+            };
+            return;
+          }
+        }
       } catch (err) {
+        // onFail 跳转逻辑
+        if (step.onFail && step.onFail.length > 0) {
+          const targetStepId = step.onFail[0];
+          const targetIndex = steps.findIndex((s) => s.id === targetStepId);
+
+          // 循环防护：同一目标步骤通过 onFail 跳转最多 MAX_ONFAIL_JUMPS 次
+          const targetExecCount = stepExecutionCount.get(targetStepId) ?? 0;
+          if (targetIndex >= 0 && targetExecCount < AgentRunner.MAX_ONFAIL_JUMPS) {
+            stepResults[step.id] = {
+              error: err instanceof Error ? err.message : String(err),
+            };
+            i = targetIndex;
+            continue; // 跳转到目标步骤
+          }
+        }
+        // 没有 onFail 或目标未找到，正常中止
         yield {
           type: "plan:error",
           stepId: step.id,
@@ -148,6 +295,13 @@ export class AgentRunner {
         };
         return;
       }
+
+      i++;
+    }
+
+    // afterPlan hook
+    if (this.hooks) {
+      await this.hooks.executeHooks("afterPlan", { planId: plan.id, stepResults });
     }
   }
 }

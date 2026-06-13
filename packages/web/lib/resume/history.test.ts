@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDefaultModule, createEmptyResume } from "@resumate/shared";
+import { createEmptyResume } from "@resumate/shared";
 import {
   commitResumeMutation,
   redoResumeMutation,
@@ -16,18 +16,17 @@ describe("resume history", () => {
     };
 
     const committed = commitResumeMutation(initial, (draft) => {
-      draft.modules.push(createDefaultModule("header", 0, "header"));
+      draft.data.basics = { name: "张三" };
     });
-    expect(committed.resume.modules).toHaveLength(1);
+    expect(committed.resume.data.basics?.name).toBe("张三");
     expect(committed.undoStack).toHaveLength(1);
 
     const undone = undoResumeMutation(committed);
-    expect(undone.resume.modules).toHaveLength(0);
+    expect(undone.resume.data.basics).toBeUndefined();
     expect(undone.redoStack).toHaveLength(1);
 
     const redone = redoResumeMutation(undone);
-    expect(redone.resume.modules).toHaveLength(1);
-    expect(redone.resume.modules[0]?.id).toBe("header");
+    expect(redone.resume.data.basics?.name).toBe("张三");
   });
 
   it("clears redo stack after a new commit", () => {
@@ -38,14 +37,15 @@ describe("resume history", () => {
     };
 
     const committed = commitResumeMutation(initial, (draft) => {
-      draft.modules.push(createDefaultModule("header", 0, "header"));
+      draft.data.basics = { name: "张三" };
     });
     const undone = undoResumeMutation(committed);
     const next = commitResumeMutation(undone, (draft) => {
-      draft.modules.push(createDefaultModule("summary", 0, "summary"));
+      draft.data.basics = { name: "李四", label: "设计师" };
     });
 
     expect(next.redoStack).toHaveLength(0);
-    expect(next.resume.modules[0]?.type).toBe("summary");
+    expect(next.resume.data.basics?.name).toBe("李四");
+    expect(next.resume.data.basics?.label).toBe("设计师");
   });
 });

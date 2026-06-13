@@ -1,4 +1,5 @@
 import { resumeSchema } from "@resumate/shared";
+import { scoreResume } from "./evaluate";
 
 export interface ToolFn {
   (args: Record<string, unknown>): Promise<Record<string, unknown>>;
@@ -66,18 +67,39 @@ export function createBuiltInTools(): ToolRegistry {
   registry.register("validateResume", async (args) => {
     const resume = resumeSchema.parse(args.resume);
     const issues: string[] = [];
-    if (resume.modules.length === 0) {
-      issues.push("简历没有任何模块");
+    const data = resume.data;
+
+    // 结构验证
+    const hasAnyContent =
+      (data.work && data.work.length > 0) ||
+      (data.education && data.education.length > 0) ||
+      (data.skills && data.skills.length > 0);
+
+    if (!hasAnyContent) {
+      issues.push("简历缺少实质性内容（工作/教育/技能至少需要一项）");
     }
-    const headerMod = resume.modules.find((m) => m.type === "header");
-    if (!headerMod) {
-      issues.push("缺少头部模块（姓名、联系方式）");
-    } else {
-      if (!headerMod.data.name) issues.push("姓名未填写");
+    if (!data.basics?.name) {
+      issues.push("姓名未填写");
     }
+
+    // 质量评分
+    const jdKeywords = args.jdKeywords as string[] | undefined;
+    const score = scoreResume(resume, jdKeywords);
+
+    if (score.contentQuality < 60) {
+      issues.push("内容质量偏低：建议加强 STAR 法则和量化指标");
+    }
+    if (jdKeywords && jdKeywords.length > 0 && score.atsCompatibility < 50) {
+      issues.push("ATS 兼容性偏低：建议增加 JD 关键词匹配");
+    }
+
+    // 综合判断：结构无严重问题 且 质量评分 ≥ 50 即为有效
+    const structuralOk = hasAnyContent && !!data.basics?.name;
+
     return {
-      valid: issues.length === 0,
+      valid: structuralOk && score.overall >= 50,
       issues,
+      score,
     };
   });
 

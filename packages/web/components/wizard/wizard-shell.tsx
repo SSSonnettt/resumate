@@ -1,27 +1,30 @@
 "use client";
-import { Undo2, Redo2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 import { StepIndicator } from "./step-indicator";
-import { NavigationBar } from "./navigation-bar";
-import { ChatStep } from "./chat-step";
-import { GeneratingStep } from "./generating-step";
-import { EditingStep } from "./editing-step";
-import { PreviewStep } from "./preview-step";
 import { useWizardStore } from "@/lib/stores/wizard-store";
-import { useResumeStore } from "@/lib/stores/resume-store";
+import { StepSkeleton } from "./step-skeleton";
+import { GithubLogo } from "@phosphor-icons/react";
 
-const STEP_LABEL: Record<string, string> = {
-  chat: "步骤 1/4 · 聊天收集",
-  generating: "步骤 2/4 · AI 生成",
-  editing: "步骤 3/4 · 可视化编辑",
-  preview: "步骤 4/4 · 预览导出",
-};
+const ChatStep = dynamic(
+  () => import("./chat-step").then((m) => ({ default: m.ChatStep })),
+  { loading: () => <StepSkeleton /> },
+);
+const GeneratingStep = dynamic(
+  () => import("./generating-step").then((m) => ({ default: m.GeneratingStep })),
+  { loading: () => <StepSkeleton /> },
+);
+const EditingStep = dynamic(
+  () => import("./editing-step").then((m) => ({ default: m.EditingStep })),
+  { loading: () => <StepSkeleton /> },
+);
+const PreviewStep = dynamic(
+  () => import("./preview-step").then((m) => ({ default: m.PreviewStep })),
+  { loading: () => <StepSkeleton /> },
+);
 
 export function WizardShell() {
   const step = useWizardStore((s) => s.step);
-  const undo = useResumeStore((s) => s.undo);
-  const redo = useResumeStore((s) => s.redo);
-  const undoStack = useResumeStore((s) => s.undoStack);
-  const redoStack = useResumeStore((s) => s.redoStack);
 
   const stepContent = (() => {
     switch (step) {
@@ -37,42 +40,45 @@ export function WizardShell() {
   })();
 
   return (
-    <div className="flex h-screen flex-col bg-slate-100 text-slate-900">
-      {/* 顶部导航栏 */}
-      <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-bold text-slate-900">Resumate</span>
-          <span className="text-slate-200">|</span>
-          <button
-            onClick={undo}
-            disabled={undoStack.length === 0}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30"
-            title="撤销"
-          >
-            <Undo2 size={16} />
-          </button>
-          <button
-            onClick={redo}
-            disabled={redoStack.length === 0}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30"
-            title="重做"
-          >
-            <Redo2 size={16} />
-          </button>
-        </div>
+    <div className="relative flex h-dvh flex-col overflow-hidden">
+      {/* 顶部标题栏 — 常规网站标题栏 */}
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-12 max-w-[1440px] items-center justify-between px-4 md:px-8">
+          <span className="text-sm font-bold tracking-tight">Resumate</span>
 
-        <StepIndicator />
-
-        <div className="w-[160px] text-right text-xs text-slate-400">
-          {STEP_LABEL[step]}
+          <a
+            href="https://github.com/SSSonnettt/resumate"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-foreground-muted transition-colors hover:text-foreground"
+          >
+            <GithubLogo size={14} weight="light" />
+            <span className="hidden sm:inline">GitHub</span>
+          </a>
         </div>
       </header>
 
-      {/* 内容区 */}
-      <div className="flex-1 overflow-hidden">{stepContent}</div>
+      {/* 步骤指示器 — 浮动居中玻璃 pill */}
+      <div className="flex justify-center py-4">
+        <StepIndicator />
+      </div>
 
-      {/* 底部导航 */}
-      <NavigationBar />
+      {/* 内容区 — 大量留白 + 垂直 fade-up 动画 */}
+      <main className="flex-1 overflow-hidden px-4 pt-6 pb-0 md:px-8 md:pt-8">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={step}
+            initial={{ y: 24, opacity: 0, filter: "blur(2px)" }}
+            animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+            exit={{ y: -16, opacity: 0 }}
+            transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+            className="mx-auto h-full max-w-[1440px]"
+          >
+            {stepContent}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
     </div>
   );
 }

@@ -2,14 +2,11 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import {
-  createDefaultModule,
   createEmptyResume,
-  normalizeResumeOrder,
-  type ModuleData,
-  type ModuleType,
   type Resume,
   type Theme,
 } from "@resumate/shared";
+import { templates, getTemplate } from "@/lib/templates";
 import {
   commitResumeMutation,
   redoResumeMutation,
@@ -27,13 +24,15 @@ interface ResumeState {
   redoStack: ResumeHistoryEntry[];
 
   init: () => void;
-  setTheme: (theme: Partial<Theme>) => void;
-  addModule: (type: ModuleType) => void;
-  removeModule: (moduleId: string) => void;
-  reorderModules: (fromIndex: number, toIndex: number) => void;
-  updateModuleData: (moduleId: string, data: Partial<ModuleData>) => void;
+  /** 微调当前模板的样式（颜色/字体/间距） */
+  setTheme: (partial: Partial<Theme>) => void;
+  /** 切换模板：覆盖 theme（colors/typography/spacing），不触碰 data */
+  setTemplate: (templateId: string) => void;
+  /** 直接更新 resume.data 中的某个路径 */
+  updateData: (recipe: (draft: Resume["data"]) => void) => void;
   undo: () => void;
   redo: () => void;
+  /** AI 生成完成后替换整个 resume */
   applyAIResult: (resume: Resume) => void;
 }
 
@@ -59,38 +58,23 @@ export const useResumeStore = create<ResumeState>()(
       });
     },
 
-    addModule: (type) => {
+    setTemplate: (templateId) => {
+      const template = getTemplate(templateId);
+      if (!template) return;
+
       commitAndPersist((draft) => {
-        draft.modules.push(createDefaultModule(type, draft.modules.length));
+        draft.theme = {
+          templateId: template.id,
+          colors: { ...template.colors },
+          typography: { ...template.typography },
+          spacing: template.spacing,
+        };
       });
     },
 
-    removeModule: (moduleId) => {
+    updateData: (recipe) => {
       commitAndPersist((draft) => {
-        draft.modules = normalizeResumeOrder({
-          ...draft,
-          modules: draft.modules.filter((module) => module.id !== moduleId),
-        }).modules;
-      });
-    },
-
-    reorderModules: (fromIndex, toIndex) => {
-      commitAndPersist((draft) => {
-        const [moved] = draft.modules.splice(fromIndex, 1);
-        if (!moved) return;
-        draft.modules.splice(toIndex, 0, moved);
-        draft.modules.forEach((module, index) => {
-          module.order = index;
-        });
-      });
-    },
-
-    updateModuleData: (moduleId, dataPatch) => {
-      commitAndPersist((draft) => {
-        const module = draft.modules.find((item) => item.id === moduleId);
-        if (module) {
-          Object.assign(module.data, dataPatch);
-        }
+        recipe(draft.data);
       });
     },
 
@@ -115,13 +99,12 @@ export const useResumeStore = create<ResumeState>()(
     },
 
     applyAIResult: (aiResume) => {
-      const resume = normalizeResumeOrder(aiResume);
       set((state) => {
-        state.resume = resume;
+        state.resume = aiResume;
         state.undoStack = [];
         state.redoStack = [];
       });
-      persistResume(resume);
+      persistResume(aiResume);
     },
   })),
 );

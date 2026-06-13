@@ -1,0 +1,41 @@
+{
+  "id": "elegant-timeline",
+  "name": "Elegant Timeline",
+  "nameZh": "优雅时间线",
+  "description": "衬线字体单栏布局，工作与教育用时间线变体展示职业成长路径",
+  "layout": "single-column",
+  "colors": {
+    "primary": "#3d2c2e",
+    "primaryLight": "#5c4742",
+    "primaryDark": "#2c1a1c",
+    "accent": "#b8860b",
+    "background": "#fefefe",
+    "surface": "#faf8f5",
+    "textPrimary": "#3d2c2e",
+    "textSecondary": "#6b5558",
+    "textMuted": "#9e8b8e",
+    "border": "#d4c9c3",
+    "divider": "#c4b5ae"
+  },
+  "typography": {
+    "fontFamily": "serif",
+    "scale": {
+      "h1": "text-3xl leading-10 font-bold",
+      "h2": "text-sm leading-6 font-semibold tracking-wide",
+      "h3": "text-base leading-6 font-semibold",
+      "body": "text-sm leading-6",
+      "small": "text-xs leading-5",
+      "caption": "text-[10px] leading-4 italic"
+    }
+  },
+  "spacing": "loose",
+  "sections": {
+    "header": { "enabled": true, "order": 1, "variant": "default", "title": "" },
+    "work": { "enabled": true, "order": 2, "variant": "timeline", "title": "工作经历" },
+    "education": { "enabled": true, "order": 3, "variant": "timeline", "title": "教育背景" },
+    "skills": { "enabled": true, "order": 4, "variant": "default", "title": "专业技能" },
+    "projects": { "enabled": true, "order": 5, "variant": "default", "title": "项目作品" }
+  },
+  "headerLayout": "centered",
+  "sectionDivider": "space"
+}

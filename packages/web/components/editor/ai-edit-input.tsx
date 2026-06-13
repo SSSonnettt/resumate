@@ -1,17 +1,18 @@
 "use client";
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Spinner, Sparkle } from "@phosphor-icons/react";
 import { getProviderConfig, type AIProviderConfig } from "@/components/api-key-dialog";
-import type { ModuleType } from "@resumate/shared";
+
+type SectionKey = "basics" | "work" | "education" | "skills" | "projects";
 
 interface Props {
-  moduleType: ModuleType;
-  moduleData: Record<string, unknown>;
+  sectionKey: SectionKey;
+  sectionData: Record<string, unknown>;
   onResult: (data: Record<string, unknown>) => void;
   jdContext?: string;
 }
 
-export function AIEditInput({ moduleType, moduleData, onResult, jdContext }: Props) {
+export function AIEditInput({ sectionKey, sectionData, onResult, jdContext }: Props) {
   const [instruction, setInstruction] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,7 +40,8 @@ export function AIEditInput({ moduleType, moduleData, onResult, jdContext }: Pro
           apiKey: config.apiKey,
           baseURL: config.baseURL || undefined,
           model: config.model || undefined,
-          module: { type: moduleType, data: moduleData },
+          section: sectionKey,
+          data: sectionData,
           instruction: trimmed,
           jdContext: jdContext || undefined,
         }),
@@ -73,25 +75,25 @@ export function AIEditInput({ moduleType, moduleData, onResult, jdContext }: Pro
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
           placeholder='例如：让这段更技术化、加一个关于 K8s 的项目...'
-          className="flex-1 rounded border border-slate-200 px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-400"
+          className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs outline-none transition-colors focus:border-primary/25"
           onKeyDown={(e) => e.key === "Enter" && submit()}
           disabled={loading}
         />
         <button
           onClick={submit}
           disabled={loading || !instruction.trim()}
-          className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 shrink-0"
+          className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary/80 disabled:opacity-50 shrink-0"
         >
           {loading ? (
-            <Loader2 size={12} className="animate-spin" />
+            <Spinner size={12} weight="light" className="animate-spin" />
           ) : (
-            <Sparkles size={12} />
+            <Sparkle size={12} weight="light" />
           )}
           编辑
         </button>
       </div>
       {error && (
-        <p className="text-xs leading-5 text-rose-600">{error}</p>
+        <p className="text-xs leading-5 text-destructive">{error}</p>
       )}
     </div>
   );
