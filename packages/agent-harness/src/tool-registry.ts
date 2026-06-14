@@ -1,4 +1,3 @@
-import { resumeSchema } from "@resumate/shared";
 import { scoreResume } from "./evaluate";
 
 export interface ToolFn {
@@ -65,9 +64,14 @@ export function createBuiltInTools(): ToolRegistry {
   });
 
   registry.register("validateResume", async (args) => {
-    const resume = resumeSchema.parse(args.resume);
+    // 尝试解析为原始 JSON Resume 数据或已包装的 ResumeV4
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawResume = args.resume as any;
+    // 如果是包装后的 ResumeV4 格式 { id, data, themeSlug }，提取 data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: any = (rawResume && typeof rawResume === "object" && rawResume.data) ? rawResume.data : rawResume;
+
     const issues: string[] = [];
-    const data = resume.data;
 
     // 结构验证
     const hasAnyContent =
@@ -84,7 +88,7 @@ export function createBuiltInTools(): ToolRegistry {
 
     // 质量评分
     const jdKeywords = args.jdKeywords as string[] | undefined;
-    const score = scoreResume(resume, jdKeywords);
+    const score = scoreResume({ id: "", data, themeSlug: "flat" }, jdKeywords);
 
     if (score.contentQuality < 60) {
       issues.push("内容质量偏低：建议加强 STAR 法则和量化指标");

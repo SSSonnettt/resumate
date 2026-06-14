@@ -156,6 +156,11 @@ export function GeneratingStep() {
                 applyAIResult(data.resume);
                 hasResumeDataRef.current = true;
                 markGenerationCompleted();
+                // 提取简历名称更新侧边栏会话标题
+                const name = data.resume?.data?.basics?.name;
+                if (name) {
+                  useWizardStore.getState().setConversationName(name);
+                }
               }
             } catch {
               // 忽略解析失败的 SSE 行
@@ -332,12 +337,12 @@ export function GeneratingStep() {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-white/[0.06] bg-white/[0.02] px-8 py-6 backdrop-blur-2xl">
+      <div className="shrink-0 border-t border-white/[0.04] bg-white/[0.015] px-8 py-6 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
           {!pipelineRunning ? (
             <>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.04]">
-                <Circle size={20} weight="light" className="text-foreground-muted" />
+              <div className="flex size-10 items-center justify-center rounded-xl bg-white/[0.03] ring-1 ring-white/[0.03]">
+                <Circle size={18} weight="light" className="text-foreground-muted/40" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground-dim">管线未启动</p>
@@ -348,8 +353,8 @@ export function GeneratingStep() {
             </>
           ) : hasResumeDataRef.current ? (
             <>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/[0.06]">
-                <CheckCircle size={20} weight="light" className="text-primary" />
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/[0.06] ring-1 ring-primary/10">
+                <CheckCircle size={18} weight="light" className="text-primary" />
               </div>
               <div>
                 <p className="text-sm font-semibold">简历生成完成</p>
@@ -360,7 +365,7 @@ export function GeneratingStep() {
             </>
           ) : (
             <>
-              <Spinner size={20} weight="light" className="animate-spin text-primary" />
+              <Spinner size={18} weight="light" className="animate-spin text-primary" />
               <div className="flex-1">
                 <p className="text-sm font-semibold">AI 正在生成简历</p>
                 <p className="mt-0.5 text-xs text-foreground-dim">
@@ -384,14 +389,14 @@ export function GeneratingStep() {
         </div>
         <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.04]">
           <div
-            className="h-full rounded-full bg-primary shadow-[0_0_12px_var(--primary-glow)] transition-all"
+            className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary shadow-[0_0_12px_var(--primary-glow-strong)] transition-all"
             style={{
               width: !pipelineRunning
                 ? "0%"
                 : hasResumeDataRef.current
                   ? "100%"
                   : `${Math.min((doneSteps / Math.max(activeStageCount, 1)) * 100, 95)}%`,
-              transitionDuration: "500ms",
+              transitionDuration: "700ms",
               transitionTimingFunction: "cubic-bezier(0.32, 0.72, 0, 1)",
             }}
           />

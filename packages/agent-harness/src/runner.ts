@@ -188,6 +188,13 @@ export class AgentRunner {
               throw new Error(`步骤 ${step.id} 缺少 schema`);
             }
 
+            // 发出推理事件，说明当前步骤在做什么
+            yield {
+              type: "reasoning:chunk",
+              stepId: step.id,
+              text: `正在根据已收集的信息进行结构化生成 (${step.description || step.id})...`,
+            };
+
             const maxRetries = step.maxRetries ?? 1;
             let lastError: Error | null = null;
             let result: unknown = null;
@@ -228,6 +235,25 @@ export class AgentRunner {
             }
 
             if (lastError) throw lastError;
+
+            // 发出生成内容的文本摘要，让 UI 有内容可展示
+            const resultStr =
+              typeof result === "string"
+                ? result
+                : JSON.stringify(result, null, 2);
+            yield {
+              type: "reasoning:chunk",
+              stepId: step.id,
+              text: `结构化生成完成，共 ${resultStr.length} 字符。`,
+            };
+            yield {
+              type: "step:chunk",
+              stepId: step.id,
+              text: resultStr.length > 500
+                ? resultStr.slice(0, 500) + `\n... (共 ${resultStr.length} 字符)`
+                : resultStr,
+            };
+
             stepResults[step.id] = result;
             yield { type: "step:done", stepId: step.id, result };
             break;

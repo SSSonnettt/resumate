@@ -4,68 +4,101 @@
 
 @layer base {
   :root {
-    /* ======== Ethereal Glass — OLED Black Base ======== */
-    --background: 240 20% 2%;
-    --foreground: 240 15% 92%;
-    --foreground-dim: 240 10% 70%;
-    --foreground-muted: 240 8% 48%;
+    /* ======== Ethereal Glass · OLED Deep Base ======== */
+    --background: 240 8% 1.5%;
+    --foreground: 240 12% 94%;
+    --foreground-dim: 240 8% 72%;
+    --foreground-muted: 240 6% 46%;
 
-    --card: 240 10% 6%;
-    --card-rgb: 15 15 20;
-    --card-foreground: 240 15% 92%;
+    --card: 240 6% 4%;
+    --card-rgb: 10 10 14;
+    --card-foreground: 240 12% 94%;
 
-    --popover: 240 12% 8%;
-    --popover-foreground: 240 15% 92%;
+    --popover: 240 8% 6%;
+    --popover-foreground: 240 12% 94%;
 
-    /* 主色：冰蓝 */
-    --primary: 225 80% 66%;
-    --primary-foreground: 240 10% 98%;
-    --primary-glow: 225 80% 66% / 0.15;
+    /* 主色：温金·轻量化 → 偏冷底调的鎏金 */
+    --primary: 43 74% 55%;
+    --primary-foreground: 30 15% 6%;
+    --primary-glow: 43 74% 55% / 0.12;
+    --primary-glow-strong: 43 74% 55% / 0.25;
+    --primary-glass: 43 74% 55% / 0.06;
 
-    /* 辅助色：温热紫 */
-    --secondary: 264 60% 62%;
+    /* 辅助色：紫罗兰 · 冷调高光 */
+    --secondary: 255 65% 64%;
     --secondary-foreground: 240 10% 98%;
+    --secondary-glow: 255 65% 64% / 0.12;
 
-    --accent: 240 15% 12%;
-    --accent-foreground: 240 15% 92%;
+    /* 第三色：翡翠 · 暖意点缀 */
+    --accent: 160 60% 50%;
+    --accent-foreground: 240 5% 98%;
+    --accent-glow: 160 60% 50% / 0.08;
 
-    --muted: 240 12% 10%;
-    --muted-foreground: 240 8% 48%;
+    --muted: 240 8% 8%;
+    --muted-foreground: 240 6% 50%;
 
-    --destructive: 0 72% 56%;
-    --destructive-foreground: 240 10% 98%;
+    --destructive: 0 68% 54%;
+    --destructive-foreground: 240 5% 98%;
 
-    /* ======== 边框系统（不透明度驱动） ======== */
-    --border: 240 10% 100% / 0.08;
-    --border-hover: 240 10% 100% / 0.14;
-    --border-active: 225 80% 66% / 0.3;
+    /* ======== 边框 · 极细发丝 ======== */
+    --border: 240 8% 100% / 0.05;
+    --border-hover: 240 8% 100% / 0.1;
+    --border-active: 43 74% 55% / 0.22;
+    --hairline: 240 8% 100% / 0.03;
 
-    --input: 240 10% 100% / 0.06;
-    --input-focus: 225 80% 66% / 0.25;
+    --input: 240 8% 100% / 0.04;
+    --input-focus: 43 74% 55% / 0.18;
 
-    --ring: 225 80% 66% / 0.35;
+    --ring: 43 74% 55% / 0.28;
 
-    /* ======== 圆角 ======== */
-    --radius: 0.75rem;
-    --radius-card: 1.5rem;
+    /* ======== 圆角系统 · Squircle 层级 ======== */
+    --radius-xs: 0.25rem;
+    --radius-sm: 0.375rem;
+    --radius: 0.625rem;
+    --radius-lg: 0.875rem;
+    --radius-xl: 1.125rem;
+    --radius-2xl: 1.5rem;
     --radius-shell: 2rem;
 
-    /* ======== Chart ======== */
-    --chart-1: 225 80% 66%;
-    --chart-2: 264 60% 62%;
-    --chart-3: 180 60% 52%;
-    --chart-4: 340 65% 60%;
-    --chart-5: 40 80% 60%;
+    /* ======== 字重 ======== */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* ======== 字间距 ======== */
+    --tracking-tighter: -0.025em;
+    --tracking-tight: -0.012em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.025em;
+    --tracking-wider: 0.06em;
+
+    /* ======== Z-Index 层级 ======== */
+    --z-base: 0;
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-overlay: 300;
+    --z-modal: 400;
+    --z-toast: 500;
+
+    /* ======== Ethereal Glass 属性 ======== */
+    --glass-bg: 240 8% 100% / 0.015;
+    --glass-bg-raised: 240 8% 100% / 0.025;
+    --glass-border: 240 8% 100% / 0.05;
+    --glass-border-hover: 240 8% 100% / 0.09;
+    --glass-highlight: 240 8% 100% / 0.03;
+    --glass-blur: 24px;
+    --glass-blur-heavy: 48px;
 
     /* ======== Sidebar ======== */
-    --sidebar-background: 240 12% 4%;
-    --sidebar-foreground: 240 10% 80%;
-    --sidebar-primary: 225 80% 66%;
-    --sidebar-primary-foreground: 240 10% 98%;
-    --sidebar-accent: 240 12% 10%;
-    --sidebar-accent-foreground: 240 15% 92%;
-    --sidebar-border: 240 10% 100% / 0.06;
-    --sidebar-ring: 225 80% 66% / 0.3;
+    --sidebar-background: 240 10% 3%;
+    --sidebar-foreground: 240 8% 80%;
+    --sidebar-primary: 43 74% 55%;
+    --sidebar-primary-foreground: 30 15% 6%;
+    --sidebar-accent: 240 8% 8%;
+    --sidebar-accent-foreground: 240 12% 94%;
+    --sidebar-border: 240 8% 100% / 0.04;
+    --sidebar-ring: 43 74% 55% / 0.22;
   }
 
   * {
@@ -75,57 +108,222 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: var(--font-body), "Noto Sans SC", system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* ======== 滚动条 ======== */
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+  h1, h2, h3, h4, h5, h6,
+  .font-display {
+    font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+    letter-spacing: var(--tracking-tight);
   }
-  ::-webkit-scrollbar-track {
-    background: transparent;
+
+  h1, h2, h3, h4 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0.75rem;
+    z-index: var(--z-toast);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    font-size: 0.875rem;
+    font-weight: var(--font-weight-medium);
+    transition: top 0.2s ease;
   }
+  .skip-link:focus { top: 0.75rem; }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: hsl(240 10% 100% / 0.08);
+    background: hsl(240 8% 100% / 0.06);
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(240 10% 100% / 0.14);
+    background: hsl(240 8% 100% / 0.1);
   }
 }
 
-/* ======== 光晕系统 ======== */
+/* ======== 径向辉光 · Ethereal Orbs ======== */
 @layer components {
-  .glow-primary {
+  /* 紫罗兰冷调光球 */
+  .orb-violet {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    width: 60vw;
+    height: 60vw;
+    max-width: 900px;
+    max-height: 900px;
+    border-radius: 50%;
     background: radial-gradient(
-      ellipse 60% 50% at 50% 0%,
-      hsl(225 80% 66% / 0.08) 0%,
+      ellipse 60% 60% at 50% 50%,
+      hsl(255 65% 64% / 0.06) 0%,
+      hsl(255 65% 64% / 0.02) 35%,
       transparent 70%
     );
+    filter: blur(80px);
+    top: -30%;
+    right: -15%;
   }
-  .glow-secondary {
+
+  /* 翡翠暖意光球 */
+  .orb-emerald {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    width: 50vw;
+    height: 50vw;
+    max-width: 700px;
+    max-height: 700px;
+    border-radius: 50%;
     background: radial-gradient(
-      ellipse 50% 60% at 100% 100%,
-      hsl(264 60% 62% / 0.05) 0%,
+      ellipse 55% 55% at 50% 50%,
+      hsl(160 60% 50% / 0.04) 0%,
+      hsl(160 60% 50% / 0.01) 40%,
       transparent 70%
     );
+    filter: blur(100px);
+    bottom: -20%;
+    left: -10%;
+  }
+
+  /* 鎏金微光 · 顶部 */
+  .orb-gold {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    width: 40vw;
+    height: 40vw;
+    max-width: 600px;
+    max-height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse 50% 50% at 50% 0%,
+      hsl(43 74% 55% / 0.05) 0%,
+      hsl(43 74% 55% / 0.015) 35%,
+      transparent 70%
+    );
+    filter: blur(60px);
+    top: -10%;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
 
-/* ======== Noise Overlay ======== */
+/* ======== Noise 纹理 ======== */
 @layer components {
   .noise-overlay {
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 50;
     pointer-events: none;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     background-repeat: repeat;
     background-size: 256px 256px;
   }
+}
+
+/* ======== Ethereal 玻璃容器 ======== */
+@layer components {
+  .glass-panel {
+    background: hsl(var(--glass-bg));
+    border: 1px solid hsl(var(--glass-border));
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    box-shadow:
+      inset 0 1px 0 hsl(var(--glass-highlight)),
+      0 8px 32px rgba(0 0 0 / 0.5);
+    border-radius: var(--radius-xl);
+  }
+
+  .glass-panel-raised {
+    background: hsl(var(--glass-bg-raised));
+    border: 1px solid hsl(var(--glass-border));
+    backdrop-filter: blur(var(--glass-blur-heavy));
+    -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+    box-shadow:
+      inset 0 1px 0 hsl(var(--glass-highlight)),
+      0 12px 48px rgba(0 0 0 / 0.6);
+    border-radius: var(--radius-2xl);
+  }
+
+  /* 玻璃药丸 · 浮空导航 */
+  .glass-pill {
+    background: hsl(240 8% 100% / 0.02);
+    border: 1px solid hsl(240 8% 100% / 0.06);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    box-shadow:
+      inset 0 1px 0 hsl(240 8% 100% / 0.03),
+      0 4px 24px rgba(0 0 0 / 0.4);
+    border-radius: 9999px;
+  }
+
+  /* 玻璃容器 · 悬停态 */
+  .glass-hover {
+    transition:
+      border-color 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+      box-shadow 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+      background-color 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .glass-hover:hover {
+    border-color: hsl(var(--glass-border-hover));
+    box-shadow:
+      inset 0 1px 0 hsl(var(--glass-highlight)),
+      0 12px 40px rgba(0 0 0 / 0.55);
+    background: hsl(var(--glass-bg-raised));
+  }
+}
+
+/* ======== Double-Bezel 嵌套容器 ======== */
+@layer components {
+  /* 外壳 · 金属托盘感 */
+  .double-bezel-outer {
+    background: hsl(240 8% 100% / 0.015);
+    border: 1px solid hsl(var(--hairline));
+    padding: 0.125rem;
+    border-radius: var(--radius-shell);
+    box-shadow:
+      inset 0 1px 0 hsl(240 8% 100% / 0.02),
+      0 8px 40px rgba(0 0 0 / 0.45);
+  }
+
+  /* 内核 · 计算出的同心半径 */
+  .double-bezel-inner {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--glass-border));
+    border-radius: calc(var(--radius-shell) - 0.125rem);
+    box-shadow: inset 0 1px 0 hsl(var(--glass-highlight));
+  }
+
+  /* 轻量级 Double-Bezel · 用于面板 */
+  .bezel-panel {
+    border-radius: var(--radius-2xl);
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(240 8% 100% / 0.01);
+    padding: 0.09375rem;
+    box-shadow:
+      0 4px 24px rgba(0 0 0 / 0.4),
+      inset 0 1px 0 hsl(var(--glass-highlight));
+  }
+}
+
+/* ======== 渐入动画 · Staggered Reveal ======== */
+@layer components {
+  .reveal-fade-up {
+    animation: reveal-fade-up 0.8s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+  .reveal-fade-up-delay-1 { animation-delay: 0.08s; }
+  .reveal-fade-up-delay-2 { animation-delay: 0.16s; }
+  .reveal-fade-up-delay-3 { animation-delay: 0.24s; }
+  .reveal-fade-up-delay-4 { animation-delay: 0.32s; }
+  .reveal-fade-up-delay-5 { animation-delay: 0.4s; }
 }
 
 /* ======== 打印模式 ======== */
@@ -134,9 +332,7 @@
     size: A4;
     margin: 0;
   }
-  body.print-mode {
-    background: white;
-  }
+  body.print-mode { background: white; }
   body.print-mode .a4-page {
     break-after: page;
     box-shadow: none;
@@ -150,7 +346,5 @@
   body.print-mode nav,
   body.print-mode aside,
   body.print-mode button,
-  body.print-mode .page-gap {
-    display: none;
-  }
+  body.print-mode .page-gap { display: none; }
 }

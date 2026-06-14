@@ -16,8 +16,8 @@ export type Location = z.infer<typeof locationSchema>;
 
 // --- Profile ---
 export const profileSchema = z.object({
-  network: z.string().describe("平台名称, e.g. GitHub"),
-  username: z.string().describe("用户名"),
+  network: z.string().optional().describe("平台名称, e.g. GitHub"),
+  username: z.string().optional().describe("用户名"),
   url: z.string().url().optional().describe("主页链接"),
 });
 export type Profile = z.infer<typeof profileSchema>;
@@ -39,8 +39,8 @@ export type Basics = z.infer<typeof basicsSchema>;
 // --- Work ---
 export const workItemSchema = z.object({
   id: z.string().optional().describe("内部 UUID"),
-  name: z.string().describe("公司名称"),
-  position: z.string().describe("职位"),
+  name: z.string().optional().describe("公司名称"),
+  position: z.string().optional().describe("职位"),
   url: z.string().url().optional().describe("公司网站"),
   startDate: z.string().optional().describe("YYYY-MM-DD 或 YYYY-MM"),
   endDate: z.string().optional().describe("YYYY-MM-DD 或 YYYY-MM"),
@@ -53,7 +53,7 @@ export type WorkItem = z.infer<typeof workItemSchema>;
 // --- Education ---
 export const educationItemSchema = z.object({
   id: z.string().optional(),
-  institution: z.string().describe("学校名称"),
+  institution: z.string().optional().describe("学校名称"),
   url: z.string().url().optional(),
   area: z.string().optional().describe("专业/领域"),
   studyType: z.string().optional().describe("学位类型, e.g. 学士/硕士/博士"),
@@ -67,16 +67,16 @@ export type EducationItem = z.infer<typeof educationItemSchema>;
 // --- Skills ---
 export const skillItemSchema = z.object({
   id: z.string().optional(),
-  name: z.string().describe("技能分类名"),
+  name: z.string().optional().describe("技能分类名"),
   level: z.string().optional().describe("熟练度, e.g. Master/Advanced/Intermediate"),
-  keywords: z.array(z.string()).describe("具体技能关键词"),
+  keywords: z.array(z.string()).optional().describe("具体技能关键词"),
 });
 export type SkillItem = z.infer<typeof skillItemSchema>;
 
 // --- Projects ---
 export const projectItemSchema = z.object({
   id: z.string().optional(),
-  name: z.string().describe("项目名称"),
+  name: z.string().optional().describe("项目名称"),
   description: z.string().optional().describe("项目描述"),
   highlights: z.array(z.string()).optional().describe("项目亮点"),
   keywords: z.array(z.string()).optional().describe("使用技术栈"),
@@ -92,7 +92,7 @@ export type ProjectItem = z.infer<typeof projectItemSchema>;
 // --- Awards ---
 export const awardItemSchema = z.object({
   id: z.string().optional(),
-  title: z.string().describe("奖项名称"),
+  title: z.string().optional().describe("奖项名称"),
   date: z.string().optional(),
   awarder: z.string().optional().describe("颁发机构"),
   summary: z.string().optional().describe("奖项说明"),
@@ -102,7 +102,7 @@ export type AwardItem = z.infer<typeof awardItemSchema>;
 // --- Certificates ---
 export const certificateItemSchema = z.object({
   id: z.string().optional(),
-  name: z.string().describe("证书名称"),
+  name: z.string().optional().describe("证书名称"),
   date: z.string().optional(),
   issuer: z.string().optional().describe("颁发机构"),
   url: z.string().url().optional(),
@@ -112,7 +112,7 @@ export type CertificateItem = z.infer<typeof certificateItemSchema>;
 // --- Publications ---
 export const publicationItemSchema = z.object({
   id: z.string().optional(),
-  name: z.string().describe("出版物名称"),
+  name: z.string().optional().describe("出版物名称"),
   publisher: z.string().optional().describe("出版社/期刊"),
   releaseDate: z.string().optional(),
   url: z.string().url().optional(),
@@ -123,7 +123,7 @@ export type PublicationItem = z.infer<typeof publicationItemSchema>;
 // --- Volunteer ---
 export const volunteerItemSchema = z.object({
   id: z.string().optional(),
-  organization: z.string().describe("组织名称"),
+  organization: z.string().optional().describe("组织名称"),
   position: z.string().optional().describe("角色"),
   url: z.string().url().optional(),
   startDate: z.string().optional(),
@@ -136,15 +136,15 @@ export type VolunteerItem = z.infer<typeof volunteerItemSchema>;
 // --- Languages ---
 export const languageItemSchema = z.object({
   id: z.string().optional(),
-  language: z.string().describe("语言名称"),
-  fluency: z.string().describe("熟练度, e.g. 母语/流利/熟练/基础"),
+  language: z.string().optional().describe("语言名称"),
+  fluency: z.string().optional().describe("熟练度, e.g. 母语/流利/熟练/基础"),
 });
 export type LanguageItem = z.infer<typeof languageItemSchema>;
 
 // --- Interests ---
 export const interestItemSchema = z.object({
   id: z.string().optional(),
-  name: z.string().describe("兴趣名称"),
+  name: z.string().optional().describe("兴趣名称"),
   keywords: z.array(z.string()).optional(),
 });
 export type InterestItem = z.infer<typeof interestItemSchema>;
@@ -152,8 +152,8 @@ export type InterestItem = z.infer<typeof interestItemSchema>;
 // --- References ---
 export const referenceItemSchema = z.object({
   id: z.string().optional(),
-  name: z.string().describe("推荐人姓名"),
-  reference: z.string().describe("推荐语/描述"),
+  name: z.string().optional().describe("推荐人姓名"),
+  reference: z.string().optional().describe("推荐语/描述"),
 });
 export type ReferenceItem = z.infer<typeof referenceItemSchema>;
 
@@ -175,112 +175,53 @@ export const jsonResumeSchema = z.object({
 export type ResumeData = z.infer<typeof jsonResumeSchema>;
 
 // ============================================================
-// 模板系统 Schema
+// 旧版模板系统 Schema（仅迁移用，不再导出）
 // ============================================================
 
-export const layoutTypeSchema = z.enum([
-  "single-column",
-  "two-column",
-  "sidebar-left",
-  "sidebar-right",
-]);
-export type LayoutType = z.infer<typeof layoutTypeSchema>;
-
-export const colorTokensSchema = z.object({
-  primary: z.string(),
-  primaryLight: z.string(),
-  primaryDark: z.string(),
-  accent: z.string(),
-  background: z.string(),
-  surface: z.string(),
-  textPrimary: z.string(),
-  textSecondary: z.string(),
-  textMuted: z.string(),
-  border: z.string(),
-  divider: z.string(),
-});
-export type ColorTokens = z.infer<typeof colorTokensSchema>;
-
-export const typographyScaleSchema = z.object({
-  h1: z.string().describe("姓名字号+行高, e.g. 'text-3xl leading-10 font-bold'"),
-  h2: z.string().describe("章节标题"),
-  h3: z.string().describe("子标题"),
-  body: z.string().describe("正文"),
-  small: z.string().describe("辅助文本"),
-  caption: z.string().describe("说明文字"),
-});
-export type TypographyScale = z.infer<typeof typographyScaleSchema>;
-
-export const typographySchema = z.object({
-  fontFamily: z.enum(["sans", "serif", "kai", "mono"]),
-  scale: typographyScaleSchema,
-});
-export type Typography = z.infer<typeof typographySchema>;
-
-export const sectionVariantSchema = z.enum([
-  "default",
-  "compact",
-  "timeline",
-  "card",
-  "tag-cloud",
-  "progress-bar",
-]);
-export type SectionVariant = z.infer<typeof sectionVariantSchema>;
-
-export const sectionConfigSchema = z.object({
-  enabled: z.boolean(),
-  order: z.number(),
-  variant: sectionVariantSchema,
-  title: z.string().optional(),
-});
-export type SectionConfig = z.infer<typeof sectionConfigSchema>;
-
-export const templateConfigSchema = z.object({
-  id: z.string(),
-  name: z.string().describe("英文名"),
-  nameZh: z.string().describe("中文名"),
-  description: z.string().optional(),
-  layout: layoutTypeSchema,
-  colors: colorTokensSchema,
-  typography: typographySchema,
-  spacing: z.enum(["compact", "normal", "loose"]),
-  sections: z.object({
-    header: sectionConfigSchema,
-    work: sectionConfigSchema,
-    education: sectionConfigSchema,
-    skills: sectionConfigSchema,
-    projects: sectionConfigSchema,
-    awards: sectionConfigSchema.optional(),
-    certificates: sectionConfigSchema.optional(),
-    publications: sectionConfigSchema.optional(),
-    volunteer: sectionConfigSchema.optional(),
-    languages: sectionConfigSchema.optional(),
-    interests: sectionConfigSchema.optional(),
-    references: sectionConfigSchema.optional(),
-  }),
-  headerLayout: z.enum(["centered", "split", "left-aligned"]),
-  sectionDivider: z.enum(["line", "space", "none", "dot"]),
-});
-export type TemplateConfig = z.infer<typeof templateConfigSchema>;
-export type HeaderLayout = z.infer<typeof templateConfigSchema.shape.headerLayout>;
-export type SectionDivider = z.infer<typeof templateConfigSchema.shape.sectionDivider>;
-
-// ============================================================
-// 运行时 Resume 类型
-// ============================================================
-
-export const themeSchema = z.object({
+const themeSchemaV3 = z.object({
   templateId: z.string(),
-  colors: colorTokensSchema,
-  typography: typographySchema,
+  colors: z.object({
+    primary: z.string(),
+    primaryLight: z.string(),
+    primaryDark: z.string(),
+    accent: z.string(),
+    background: z.string(),
+    surface: z.string(),
+    textPrimary: z.string(),
+    textSecondary: z.string(),
+    textMuted: z.string(),
+    border: z.string(),
+    divider: z.string(),
+  }),
+  typography: z.object({
+    fontFamily: z.enum(["sans", "serif", "kai", "mono"]),
+    scale: z.object({
+      h1: z.string(),
+      h2: z.string(),
+      h3: z.string(),
+      body: z.string(),
+      small: z.string(),
+      caption: z.string(),
+    }),
+  }),
   spacing: z.enum(["compact", "normal", "loose"]),
 });
-export type Theme = z.infer<typeof themeSchema>;
+
+export const resumeSchemaV3 = z.object({
+  id: z.string(),
+  data: jsonResumeSchema,
+  theme: themeSchemaV3,
+});
+export type ResumeV3 = z.infer<typeof resumeSchemaV3>;
+
+// ============================================================
+// 当前运行时 Resume 类型（v4：themeSlug 替代完整 theme）
+// ============================================================
 
 export const resumeSchema = z.object({
   id: z.string(),
   data: jsonResumeSchema,
-  theme: themeSchema,
+  themeSlug: z.string().default("flat"),
 });
 export type Resume = z.infer<typeof resumeSchema>;
 
@@ -295,44 +236,12 @@ function createId(): string {
   return `id-${Math.random().toString(36).slice(2)}`;
 }
 
-/** minimal-professional 模板的默认主题快照（build 时内联，避免循环依赖） */
-const MINIMAL_PROFESSIONAL_THEME: Omit<Theme, "templateId"> = {
-  colors: {
-    primary: "#1e293b",
-    primaryLight: "#475569",
-    primaryDark: "#0f172a",
-    accent: "#2563eb",
-    background: "#ffffff",
-    surface: "#f8fafc",
-    textPrimary: "#0f172a",
-    textSecondary: "#475569",
-    textMuted: "#94a3b8",
-    border: "#e2e8f0",
-    divider: "#cbd5e1",
-  },
-  typography: {
-    fontFamily: "sans",
-    scale: {
-      h1: "text-3xl/leading-10 font-bold",
-      h2: "text-lg/leading-7 font-semibold tracking-wide",
-      h3: "text-sm/leading-5 font-semibold",
-      body: "text-sm/leading-6",
-      small: "text-xs/leading-5",
-      caption: "text-[10px]/leading-4",
-    },
-  },
-  spacing: "normal" as const,
-};
-
-export function createDefaultTheme(): Theme {
-  return { templateId: "minimal-professional", ...MINIMAL_PROFESSIONAL_THEME };
-}
-
+/** 创建空简历，默认使用 flat 主题 */
 export function createEmptyResume(id = createId()): Resume {
   return {
     id,
     data: {},
-    theme: createDefaultTheme(),
+    themeSlug: "flat",
   };
 }
 
@@ -343,7 +252,8 @@ export function createEmptyResume(id = createId()): Resume {
 /**
  * 检测简历数据格式版本。
  *
- * - 3: JSON Resume 格式 (data.basics 存在)
+ * - 4: v4 JSON Resume 格式 (data.basics + themeSlug 存在)
+ * - 3: v3 JSON Resume 格式 (data.basics + theme.templateId 存在)
  * - 2: v2 modules 格式 (modules 数组 + skills categories)
  * - 1: v1 modules 格式 (modules 数组 + skills items)
  *
@@ -354,6 +264,9 @@ export function detectResumeVersion(raw: unknown): number {
   if (typeof raw !== "object" || raw === null) return 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const obj = raw as Record<string, unknown>;
+
+  // v4: data 字段存在 + data.basics + themeSlug 存在
+  if ("themeSlug" in obj && typeof obj.themeSlug === "string") return 4;
 
   // v3: data 字段存在 + data.basics 存在
   if ("data" in obj && typeof obj.data === "object" && obj.data !== null) {
@@ -478,7 +391,7 @@ type ResumeV2 = z.infer<typeof resumeSchemaV2>;
 // ============ v2 → v3 迁移 ============
 
 /** 从旧 primaryColor 推导颜色 tokens 的默认值 */
-function deriveColorTokens(primaryColor: string): ColorTokens {
+function deriveColorTokens(primaryColor: string): ResumeV3["theme"]["colors"] {
   return {
     primary: primaryColor,
     primaryLight: primaryColor,
@@ -494,9 +407,9 @@ function deriveColorTokens(primaryColor: string): ColorTokens {
   };
 }
 
-function deriveTypography(fontFamily: "sans" | "serif" | "kai", _fontSize: string): Typography {
+function deriveTypography(fontFamily: "sans" | "serif" | "kai" | "mono", _fontSize: string): ResumeV3["theme"]["typography"] {
   return {
-    fontFamily: fontFamily as Typography["fontFamily"],
+    fontFamily: fontFamily as ResumeV3["theme"]["typography"]["fontFamily"],
     scale: {
       h1: "text-3xl/leading-10 font-bold",
       h2: "text-lg/leading-7 font-semibold tracking-wide",
@@ -514,7 +427,7 @@ function extractContact(contacts: Array<{ icon: string; text: string; link?: str
   return c.link || c.text;
 }
 
-export function migrateV2ToV3(oldResume: ResumeV2): Resume {
+export function migrateV2ToV3(oldResume: ResumeV2): ResumeV3 {
   const { modules, theme: oldTheme } = oldResume;
   const data: ResumeData = {};
 
@@ -603,27 +516,64 @@ export function migrateV2ToV3(oldResume: ResumeV2): Resume {
   };
 }
 
+// ============ v3 → v4 迁移 ============
+
+/** 旧模板 ID 到社区主题 slug 的降级映射 */
+const V3_TO_V4_THEME_MAP: Record<string, string> = {
+  "minimal-professional": "flat",
+  "modern-sidebar": "sidebar",
+  "elegant-timeline": "elegant",
+  "creative-split": "flat",
+  "compact-dense": "kendall",
+};
+
+/**
+ * 将 v3 格式 (data + theme) 迁移到 v4 格式 (data + themeSlug)。
+ * 提取 theme.templateId 作为 themeSlug，丢弃 colors/typography/spacing。
+ *
+ * @param oldResume v3 格式的简历
+ * @returns v4 格式的简历
+ */
+export function migrateV3ToV4(oldResume: ResumeV3): Resume {
+  const templateId = oldResume.theme.templateId;
+  const themeSlug = V3_TO_V4_THEME_MAP[templateId] || "flat";
+  return {
+    id: oldResume.id,
+    data: oldResume.data,
+    themeSlug,
+  };
+}
+
 /**
  * 安全加载简历数据，支持多版本 Schema 兼容。
  *
- * - v3: 直接 parse
- * - v2: 迁移到 v3
+ * - v4: 直接 parse
+ * - v3: 自动迁移到 v4
+ * - v2: 迁移到 v3 再迁移到 v4
  * - v1: 不支持
  *
  * @param raw 原始 JSON 数据
- * @returns 解析后的 Resume 对象
+ * @returns 解析后的 ResumeV4 对象
  * @throws 无法解析时抛出错误
  */
 export function loadResume(raw: unknown): Resume {
-  // v3: 尝试直接解析
-  const v3Result = resumeSchema.safeParse(raw);
-  if (v3Result.success) return v3Result.data;
+  // v4: 尝试直接解析
+  const v4Result = resumeSchema.safeParse(raw);
+  if (v4Result.success) return v4Result.data;
 
-  // v2: 尝试迁移
+  // v3: 尝试 parse 旧格式并自动迁移
+  const v3Result = resumeSchemaV3.safeParse(raw);
+  if (v3Result.success) {
+    console.log("检测到 v3 格式简历数据，自动迁移到 v4...");
+    return migrateV3ToV4(v3Result.data);
+  }
+
+  // v2: 迁移到 v3 再迁移到 v4
   const v2Result = resumeSchemaV2.safeParse(raw);
   if (v2Result.success) {
-    console.log("检测到 v2 格式简历数据，自动迁移到 v3...");
-    return migrateV2ToV3(v2Result.data);
+    console.log("检测到 v2 格式简历数据，自动迁移到 v4...");
+    const v3 = migrateV2ToV3(v2Result.data);
+    return migrateV3ToV4(v3);
   }
 
   // v1: 暂不支持

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { Key, ArrowRight } from "@phosphor-icons/react";
 
 const PRESETS = {
   anthropic: {
@@ -68,7 +69,6 @@ export function ApiKeyDialog() {
     const saved = loadConfig();
     if (!saved) {
       setOpen(true);
-      // 默认用 DeepSeek
       const preset = PRESETS.deepseek;
       setProvider("deepseek");
       setBaseURL(preset.defaultBaseURL);
@@ -85,7 +85,6 @@ export function ApiKeyDialog() {
     setProvider(p);
     const preset = PRESETS[p];
     setBaseURL(preset.defaultBaseURL);
-    // 切换 provider 时不重置已保存的 model
     if (!model || p !== (loadConfig()?.provider ?? "deepseek")) {
       setModel(preset.defaultModel);
     }
@@ -96,7 +95,6 @@ export function ApiKeyDialog() {
     setOpen(false);
   }
 
-  // 兼容旧版 localStorage key
   function migrateLegacyKey() {
     const legacy = localStorage.getItem("ai-api-key");
     if (legacy) {
@@ -112,92 +110,136 @@ export function ApiKeyDialog() {
 
   const preset = PRESETS[provider];
   const isCustom = provider === "custom";
-  const isValid = apiKey.trim() && (provider !== "anthropic" || true) && (!isCustom || (baseURL.trim() && model.trim()));
+  const isValid =
+    apiKey.trim() &&
+    (!isCustom || (baseURL.trim() && model.trim()));
+
+  const inputClasses =
+    "w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground-muted/30 transition-all duration-300 outline-none focus:border-primary/30 focus:bg-white/[0.03] focus:shadow-[0_0_0_3px_var(--primary-glow)]";
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-[420px] space-y-4 shadow-xl">
-        <h2 className="font-semibold text-lg">设置 AI 服务</h2>
-        <p className="text-sm text-gray-500">
-          你的 API Key 只保存在浏览器本地（localStorage），不会上传到任何服务器。
-        </p>
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-reveal-fade-up">
+      {/* Double-Bezel 玻璃模态框 */}
+      <div className="w-full max-w-[420px] rounded-3xl border border-white/[0.06] bg-white/[0.005] p-[3px] shadow-[0_0_80px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="space-y-5 rounded-[calc(1.5rem-3px)] border border-white/[0.06] bg-card p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-primary/[0.08] ring-1 ring-primary/10">
+            <Key size={20} weight="light" className="text-primary" />
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-foreground tracking-tight">
+              配置 AI 服务
+            </h2>
+            <p className="text-xs text-foreground-muted">
+              Key 只保存在浏览器本地
+            </p>
+          </div>
+        </div>
 
         {/* Provider 选择 */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">服务商</label>
-          <select
-            value={provider}
-            onChange={(e) => handleProviderChange(e.target.value as ProviderKey)}
-            className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {Object.entries(PRESETS).map(([key, val]) => (
-              <option key={key} value={key}>{val.label}</option>
+          <label className="mb-1.5 block text-xs font-medium text-foreground-dim tracking-wide">
+            服务商
+          </label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {(Object.keys(PRESETS) as ProviderKey[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleProviderChange(key)}
+                className={`rounded-xl border px-3 py-2 text-xs font-medium transition-all duration-300 ${
+                  provider === key
+                    ? "border-primary/30 bg-primary/[0.06] text-primary shadow-[0_0_12px_var(--primary-glow)]"
+                    : "border-white/[0.04] bg-transparent text-foreground-dim hover:border-white/[0.08] hover:bg-white/[0.02]"
+                }`}
+              >
+                {PRESETS[key].label}
+              </button>
             ))}
-          </select>
+          </div>
         </div>
 
         {/* API Key */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">API Key</label>
+          <label className="mb-1.5 block text-xs font-medium text-foreground-dim tracking-wide">
+            API Key
+          </label>
           <input
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder={preset.placeholder}
-            className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputClasses}
             onKeyDown={(e) => e.key === "Enter" && isValid && save()}
             autoFocus
           />
           {provider === "anthropic" && !apiKey && (
             <button
               onClick={migrateLegacyKey}
-              className="mt-1 text-xs text-blue-500 hover:text-blue-600"
+              className="mt-1.5 text-xs text-primary/60 transition-colors hover:text-primary"
             >
-              迁移旧版 Key
+              从旧版本迁移 Key
             </button>
           )}
         </div>
 
         {/* 自定义字段 */}
         {isCustom && (
-          <>
+          <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Base URL</label>
+              <label className="mb-1.5 block text-xs font-medium text-foreground-dim tracking-wide">
+                Base URL
+              </label>
               <input
                 type="text"
                 value={baseURL}
                 onChange={(e) => setBaseURL(e.target.value)}
                 placeholder="https://api.example.com/v1"
-                className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClasses}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">模型名称</label>
+              <label className="mb-1.5 block text-xs font-medium text-foreground-dim tracking-wide">
+                模型名称
+              </label>
               <input
                 type="text"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 placeholder="your-model-name"
-                className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClasses}
               />
             </div>
-          </>
+          </div>
         )}
 
-        {/* 非自定义时显示模型名 */}
+        {/* 模型信息 */}
         {!isCustom && model && (
-          <p className="text-xs text-slate-400">
-            模型：{model}（可在自定义模式下修改）
-          </p>
+          <div className="rounded-xl border border-white/[0.04] bg-white/[0.015] px-3.5 py-2.5">
+            <p className="text-xs text-foreground-muted">
+              <span className="text-foreground-dim">当前模型</span>{" "}
+              <code className="rounded-md bg-white/[0.04] px-1.5 py-0.5 font-medium text-foreground">
+                {model}
+              </code>
+            </p>
+          </div>
         )}
 
+        {/* Submit */}
         <button
           onClick={save}
           disabled={!apiKey.trim()}
-          className="w-full rounded bg-blue-600 py-2 text-sm text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="group flex w-full items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_0_24px_var(--primary-glow),0_2px_8px_rgba(0,0,0,0.3)] transition-all duration-300 active:scale-[0.97] active:shadow-[0_0_12px_var(--primary-glow)] disabled:opacity-40 disabled:shadow-none"
         >
           开始使用
+          <ArrowRight
+            size={14}
+            weight="bold"
+            className="transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-enabled:group-hover:translate-x-0.5"
+          />
         </button>
+        </div>
       </div>
     </div>
   );

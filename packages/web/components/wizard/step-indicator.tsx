@@ -6,7 +6,6 @@ const STEPS: { key: Step; label: string }[] = [
   { key: "chat", label: "聊天收集" },
   { key: "generating", label: "AI 生成" },
   { key: "editing", label: "可视化编辑" },
-  { key: "preview", label: "预览导出" },
 ];
 
 export function StepIndicator() {
@@ -16,9 +15,7 @@ export function StepIndicator() {
 
   return (
     <nav
-      className="flex items-center gap-0 rounded-full border border-white/[0.08]
-                 bg-white/[0.03] px-3 py-2 backdrop-blur-2xl
-                 shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]"
+      className="inline-flex items-center gap-0"
       aria-label="步骤进度"
     >
       {STEPS.map((s, index) => {
@@ -31,54 +28,48 @@ export function StepIndicator() {
 
         return (
           <div key={s.key} className="flex items-center">
-            {/* 步骤组件 */}
             <button
               onClick={() => isClickable && setStep(s.key)}
               disabled={!isClickable}
-              className={`group flex items-center gap-2 rounded-full px-3 py-1.5
-                transition-all duration-500
-                ${
-                  isCurrent
-                    ? "bg-primary/15 text-primary shadow-[0_0_16px_hsl(225_80%_66%/0.2)]"
-                    : isCompleted
-                      ? "cursor-pointer text-foreground-dim hover:bg-white/[0.06]"
-                      : "cursor-default text-foreground-muted"
-                }`}
+              className={`group relative flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                isCurrent
+                  ? "bg-primary/[0.08] text-primary shadow-[0_0_14px_var(--primary-glow)]"
+                  : isCompleted
+                    ? "cursor-pointer text-foreground-dim/70 hover:bg-white/[0.04] hover:text-foreground-dim"
+                    : "cursor-default text-foreground-muted/40"
+              }`}
             >
-              {/* 步骤编号圆圈 */}
+              {/* 步骤序号/勾号 · 迷你圆 */}
               <span
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold
-                  transition-all duration-500
-                  ${
-                    isCurrent
-                      ? "bg-primary text-white"
-                      : isCompleted
-                        ? "bg-primary/30 text-primary"
-                        : "bg-white/[0.08] text-foreground-muted"
-                  }`}
+                className={`flex size-4 items-center justify-center rounded-full text-[9px] transition-all duration-500 ${
+                  isCurrent
+                    ? "bg-primary text-primary-foreground shadow-[0_0_8px_var(--primary-glow-strong)]"
+                    : isCompleted
+                      ? "bg-primary/15 text-primary/80"
+                      : "bg-white/[0.04] text-foreground-muted/30"
+                }`}
               >
                 {isCompleted && !isCurrent ? (
-                  <Check size={10} weight="bold" />
+                  <Check size={8} weight="bold" />
                 ) : (
                   index + 1
                 )}
               </span>
-              {/* 标签 */}
-              <span className="text-xs font-medium whitespace-nowrap">
+              <span className="whitespace-nowrap font-medium tracking-wide hidden sm:inline">
                 {s.label}
               </span>
             </button>
 
-            {/* 连接线 */}
+            {/* 连接线 · 渐变微光 */}
             {!isLast && (
               <div className="flex items-center px-0.5">
                 <div
-                  className={`h-px w-6 transition-colors duration-500 ${
+                  className={`h-px w-4 rounded-full transition-all duration-700 ${
                     isCompleted && completedSteps.includes(STEPS[index + 1].key)
-                      ? "bg-primary/40"
+                      ? "bg-gradient-to-r from-primary/30 to-primary/20"
                       : isCurrent
-                        ? "bg-primary/20"
-                        : "bg-white/[0.08]"
+                        ? "bg-gradient-to-r from-primary/20 to-white/[0.04]"
+                        : "bg-white/[0.04]"
                   }`}
                 />
               </div>

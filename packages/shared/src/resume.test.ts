@@ -5,7 +5,9 @@ import {
   jsonResumeSchema,
   loadResume,
   migrateV2ToV3,
+  migrateV3ToV4,
   resumeSchema,
+  resumeSchemaV3,
 } from "./resume";
 
 describe("JSON Resume schema", () => {
@@ -40,17 +42,48 @@ describe("JSON Resume schema", () => {
   });
 });
 
-describe("Resume (v3)", () => {
-  it("createEmptyResume returns valid v3 resume", () => {
+describe("Resume", () => {
+  it("createEmptyResume returns valid resume", () => {
     const resume = createEmptyResume();
     expect(resumeSchema.safeParse(resume).success).toBe(true);
-    expect(resume.theme.templateId).toBe("minimal-professional");
-    expect(resume.theme.colors.primary).toBe("#1e293b");
+    expect(resume.themeSlug).toBe("flat");
     expect(resume.data).toEqual({});
+  });
+
+  it("resumeSchema parses with default themeSlug", () => {
+    const result = resumeSchema.safeParse({
+      id: "test",
+      data: { basics: { name: "张三" } },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.themeSlug).toBe("flat");
+    }
+  });
+});
+
+describe("Resume (v3 migration)", () => {
+  it("resumeSchemaV3 parses old v3 format", () => {
+    const oldV3 = resumeSchemaV3.parse({
+      id: "test",
+      data: {},
+      theme: {
+        templateId: "minimal-professional",
+        colors: { primary: "#1e293b", primaryLight: "#475569", primaryDark: "#0f172a", accent: "#2563eb", background: "#ffffff", surface: "#f8fafc", textPrimary: "#0f172a", textSecondary: "#475569", textMuted: "#94a3b8", border: "#e2e8f0", divider: "#cbd5e1" },
+        typography: { fontFamily: "sans", scale: { h1: "text-3xl font-bold", h2: "text-lg font-semibold", h3: "text-sm font-semibold", body: "text-sm", small: "text-xs", caption: "text-[10px]" } },
+        spacing: "normal",
+      },
+    });
+    expect(oldV3.theme.templateId).toBe("minimal-professional");
+    expect(oldV3.theme.colors.primary).toBe("#1e293b");
   });
 });
 
 describe("detectResumeVersion", () => {
+  it("detects v4 format (themeSlug)", () => {
+    expect(detectResumeVersion({ id: "test", data: { basics: { name: "张三" } }, themeSlug: "flat" })).toBe(4);
+  });
+
   it("detects v3 format (data.basics)", () => {
     expect(detectResumeVersion({ data: { basics: { name: "张三" } }, theme: {} })).toBe(3);
   });
@@ -191,14 +224,81 @@ describe("migrateV2ToV3", () => {
   });
 });
 
-describe("loadResume", () => {
-  it("loads v3 resume directly", () => {
-    const v3 = createEmptyResume("test-id");
-    const loaded = loadResume(v3);
-    expect(loaded.id).toBe("test-id");
+describe("migrateV3ToV4", () => {
+  it("migrates v3 to v4 with themeSlug", () => {
+    const v3 = resumeSchemaV3.parse({
+      id: "test-id",
+      data: { basics: { name: "张三" } },
+      theme: {
+        templateId: "minimal-professional",
+        colors: { primary: "#1e293b", primaryLight: "#475569", primaryDark: "#0f172a", accent: "#2563eb", background: "#ffffff", surface: "#f8fafc", textPrimary: "#0f172a", textSecondary: "#475569", textMuted: "#94a3b8", border: "#e2e8f0", divider: "#cbd5e1" },
+        typography: { fontFamily: "sans", scale: { h1: "text-3xl", h2: "text-lg", h3: "text-sm", body: "text-sm", small: "text-xs", caption: "text-[10px]" } },
+        spacing: "normal",
+      },
+    });
+    const v4 = migrateV3ToV4(v3);
+    expect(v4.id).toBe("test-id");
+    expect(v4.themeSlug).toBe("flat");
+    expect(v4.data.basics?.name).toBe("张三");
   });
 
-  it("auto-migrates v2 to v3", () => {
+  it("maps known template IDs to community slugs", () => {
+    const v3 = resumeSchemaV3.parse({
+      id: "test-id",
+      data: {},
+      theme: {
+        templateId: "modern-sidebar",
+        colors: { primary: "#1e293b", primaryLight: "#475569", primaryDark: "#0f172a", accent: "#2563eb", background: "#ffffff", surface: "#f8fafc", textPrimary: "#0f172a", textSecondary: "#475569", textMuted: "#94a3b8", border: "#e2e8f0", divider: "#cbd5e1" },
+        typography: { fontFamily: "sans", scale: { h1: "text-3xl", h2: "text-lg", h3: "text-sm", body: "text-sm", small: "text-xs", caption: "text-[10px]" } },
+        spacing: "normal",
+      },
+    });
+    const v4 = migrateV3ToV4(v3);
+    expect(v4.themeSlug).toBe("sidebar");
+  });
+
+  it("falls back to flat for unknown template IDs", () => {
+    const v3 = resumeSchemaV3.parse({
+      id: "test-id",
+      data: {},
+      theme: {
+        templateId: "unknown-template",
+        colors: { primary: "#1e293b", primaryLight: "#475569", primaryDark: "#0f172a", accent: "#2563eb", background: "#ffffff", surface: "#f8fafc", textPrimary: "#0f172a", textSecondary: "#475569", textMuted: "#94a3b8", border: "#e2e8f0", divider: "#cbd5e1" },
+        typography: { fontFamily: "sans", scale: { h1: "text-3xl", h2: "text-lg", h3: "text-sm", body: "text-sm", small: "text-xs", caption: "text-[10px]" } },
+        spacing: "normal",
+      },
+    });
+    const v4 = migrateV3ToV4(v3);
+    expect(v4.themeSlug).toBe("flat");
+  });
+});
+
+describe("loadResume", () => {
+  it("loads v4 resume directly", () => {
+    const v4 = createEmptyResume("test-id");
+    v4.data = { basics: { name: "张三" } };
+    const loaded = loadResume(v4);
+    expect(loaded.id).toBe("test-id");
+    expect(loaded.themeSlug).toBe("flat");
+  });
+
+  it("auto-migrates v3 to v4", () => {
+    const v3 = resumeSchemaV3.parse({
+      id: "test-id",
+      data: {},
+      theme: {
+        templateId: "minimal-professional",
+        colors: { primary: "#1e293b", primaryLight: "#475569", primaryDark: "#0f172a", accent: "#2563eb", background: "#ffffff", surface: "#f8fafc", textPrimary: "#0f172a", textSecondary: "#475569", textMuted: "#94a3b8", border: "#e2e8f0", divider: "#cbd5e1" },
+        typography: { fontFamily: "sans", scale: { h1: "text-3xl", h2: "text-lg", h3: "text-sm", body: "text-sm", small: "text-xs", caption: "text-[10px]" } },
+        spacing: "normal",
+      },
+    });
+    const loaded = loadResume(v3);
+    expect(loaded.id).toBe("test-id");
+    expect(loaded.themeSlug).toBe("flat");
+  });
+
+  it("auto-migrates v2 to v4", () => {
     const v2 = {
       id: "resume-1",
       modules: [
@@ -220,5 +320,6 @@ describe("loadResume", () => {
     };
     const loaded = loadResume(v2);
     expect(loaded.data.basics?.name).toBe("张三");
+    expect(loaded.themeSlug).toBe("flat");
   });
 });

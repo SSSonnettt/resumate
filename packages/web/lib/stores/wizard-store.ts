@@ -1,8 +1,18 @@
 "use client";
 import { create } from "zustand";
 import type { ChatMessage, HarnessEvent } from "@resumate/shared";
+import { useResumeStore } from "./resume-store";
 
-export type Step = "chat" | "generating" | "editing" | "preview";
+export type Step = "chat" | "generating" | "editing";
+
+export interface WizardConversation {
+  id: string;
+  /** 简历名称，从 resume.data.basics?.name 提取，未生成时为空 */
+  name?: string;
+  /** 该会话的消息列表（持久化时从 wizardMessages 同步） */
+  messages: ChatMessage[];
+  createdAt: number;
+}
 
 export interface ChecklistItem {
   key: string;
@@ -19,7 +29,7 @@ const DEFAULT_CHECKLIST: ChecklistItem[] = [
   { key: "self_evaluation", label: "自我评价", status: "pending" },
 ];
 
-const STEP_ORDER: Step[] = ["chat", "generating", "editing", "preview"];
+const STEP_ORDER: Step[] = ["chat", "generating", "editing"];
 
 /** localStorage key — 遵循 AGENTS.md Rule 1，不可随意更改 */
 export const WIZARD_STORAGE_KEY = "resumate-wizard";
@@ -32,7 +42,14 @@ interface PersistedWizardState {
   generationCompleted: boolean;
   wizardMessages: ChatMessage[];
   wizardFileContents: string[];
+  conversations: WizardConversation[];
+  activeConversationId: string;
 }
+
+/** 最大会话保留数量，防止 localStorage 膨胀 */
+const MAX_CONVERSATIONS = 20;
+/** 每会话最多保留的消息条数 */
+const MAX_MESSAGES_PER_CONVERSATION = 100;
 
 interface WizardState extends PersistedWizardState {
   isGenerating: boolean;
@@ -60,6 +77,13 @@ interface WizardState extends PersistedWizardState {
   clearWizardHarnessEvents: () => void;
   hydrate: () => void;
   reset: () => void;
+  /** 多会话管理 */
+  conversations: WizardConversation[];
+  activeConversationId: string;
+  newConversation: () => void;
+  switchConversation: (id: string) => void;
+  setConversationName: (name: string) => void;
+  deleteConversation: (id: string) => void;
 }
 
 /** 从 localStorage 恢复持久化状态 */
@@ -74,9 +98,34 @@ function loadPersistedState(): PersistedWizardState | null {
   }
 }
 
-/** 将可持久化字段写入 localStorage */
+/** 生成唯一 ID */
+function createConversationId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `conv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** 将可持久化字段写入 localStorage，同步消息到会话并裁剪 */
 function persistWizardState(state: WizardState) {
   if (typeof window === "undefined") return;
+
+  // 将当前 wizardMessages 同步到活跃会话
+  let conversations = state.conversations.map((c) => ({ ...c, messages: [...c.messages] }));
+  if (state.activeConversationId) {
+    conversations = conversations.map((c) => {
+      if (c.id === state.activeConversationId) {
+        return { ...c, messages: state.wizardMessages.slice(-MAX_MESSAGES_PER_CONVERSATION) };
+      }
+      return c;
+    });
+  }
+
+  // 裁剪会话数量
+  if (conversations.length > MAX_CONVERSATIONS) {
+    conversations = conversations.slice(-MAX_CONVERSATIONS);
+  }
+
   try {
     const payload: PersistedWizardState = {
       step: state.step,
@@ -85,6 +134,8 @@ function persistWizardState(state: WizardState) {
       generationCompleted: state.generationCompleted,
       wizardMessages: state.wizardMessages,
       wizardFileContents: state.wizardFileContents,
+      conversations,
+      activeConversationId: state.activeConversationId,
     };
     localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(payload));
   } catch {
@@ -102,6 +153,8 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   wizardFileContents: [],
   wizardStreaming: false,
   wizardHarnessEvents: [],
+  conversations: [],
+  activeConversationId: "",
 
   setStep: (step) => {
     const { completedSteps } = get();
@@ -196,6 +249,20 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   hydrate: () => {
     const saved = loadPersistedState();
     if (saved) {
+      // 旧数据迁移：如果没有 conversations 字段但有 wizardMessages，包装为单会话
+      const conversations = saved.conversations && saved.conversations.length > 0
+        ? saved.conversations
+        : (saved.wizardMessages && saved.wizardMessages.length > 0)
+          ? [{
+              id: createConversationId(),
+              name: undefined,
+              messages: saved.wizardMessages.slice(-MAX_MESSAGES_PER_CONVERSATION),
+              createdAt: saved.wizardMessages[0]?.timestamp ?? Date.now(),
+            }]
+          : [];
+      const activeConversationId = saved.activeConversationId
+        || (conversations.length > 0 ? conversations[conversations.length - 1]!.id : "");
+
       set({
         step: saved.step ?? "chat",
         completedSteps: saved.completedSteps ?? ["chat"],
@@ -203,6 +270,8 @@ export const useWizardStore = create<WizardState>((set, get) => ({
         generationCompleted: saved.generationCompleted ?? false,
         wizardMessages: saved.wizardMessages ?? [],
         wizardFileContents: saved.wizardFileContents ?? [],
+        conversations,
+        activeConversationId,
       });
     }
   },
@@ -220,6 +289,170 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     };
     persistWizardState({ ...get(), ...next } as WizardState);
     set(next);
+  },
+
+  /** 新建会话：归档当前会话后重置状态 */
+  newConversation: () => {
+    const state = get();
+    const newId = createConversationId();
+
+    // 如果当前有消息，将活跃会话归档到 conversations
+    let conversations = state.conversations.map((c) => ({ ...c, messages: [...c.messages] }));
+    if (state.activeConversationId && state.wizardMessages.length > 0) {
+      const existingIdx = conversations.findIndex((c) => c.id === state.activeConversationId);
+      const updatedConv: WizardConversation = {
+        id: state.activeConversationId,
+        name: conversations.find((c) => c.id === state.activeConversationId)?.name,
+        messages: state.wizardMessages.slice(-MAX_MESSAGES_PER_CONVERSATION),
+        createdAt: conversations.find((c) => c.id === state.activeConversationId)?.createdAt ?? Date.now(),
+      };
+      if (existingIdx >= 0) {
+        conversations[existingIdx] = updatedConv;
+      } else {
+        conversations.push(updatedConv);
+      }
+    }
+
+    // 创建新会话条目
+    conversations.push({
+      id: newId,
+      name: undefined,
+      messages: [],
+      createdAt: Date.now(),
+    });
+
+    // 裁剪会话数量
+    if (conversations.length > MAX_CONVERSATIONS) {
+      conversations = conversations.slice(-MAX_CONVERSATIONS);
+    }
+
+    const next: Partial<WizardState> = {
+      step: "chat" as Step,
+      completedSteps: ["chat"] as Step[],
+      checklist: DEFAULT_CHECKLIST.map((item) => ({ ...item, status: "pending" as const })),
+      isGenerating: false,
+      generationCompleted: false,
+      wizardMessages: [],
+      wizardFileContents: [],
+      wizardHarnessEvents: [],
+      conversations,
+      activeConversationId: newId,
+    };
+    persistWizardState({ ...state, ...next } as WizardState);
+    set(next);
+
+    // 清空简历数据（新建会话从零开始）
+    useResumeStore.getState().reset();
+  },
+  /** 切换会话：快照当前消息，加载目标会话 */
+  switchConversation: (id: string) => {
+    const state = get();
+    if (id === state.activeConversationId) return;
+
+    let conversations = state.conversations.map((c) => ({ ...c, messages: [...c.messages] }));
+
+    // 将当前消息同步回旧会话
+    if (state.activeConversationId) {
+      conversations = conversations.map((c) => {
+        if (c.id === state.activeConversationId) {
+          return { ...c, messages: state.wizardMessages.slice(-MAX_MESSAGES_PER_CONVERSATION) };
+        }
+        return c;
+      });
+    }
+
+    // 从目标会话加载消息
+    const target = conversations.find((c) => c.id === id);
+    const targetMessages = target?.messages ?? [];
+
+    const next: Partial<WizardState> = {
+      step: "chat" as Step,
+      completedSteps: ["chat"] as Step[],
+      checklist: DEFAULT_CHECKLIST.map((item) => ({ ...item, status: "pending" as const })),
+      isGenerating: false,
+      generationCompleted: false,
+      wizardMessages: targetMessages,
+      wizardFileContents: [],
+      wizardHarnessEvents: [],
+      conversations,
+      activeConversationId: id,
+    };
+    persistWizardState({ ...state, ...next } as WizardState);
+    set(next);
+  },
+
+  /** 设置当前活跃会话的名称（AI 生成完成后调用） */
+  setConversationName: (name: string) => {
+    set((state) => {
+      const conversations = state.conversations.map((c) => {
+        if (c.id === state.activeConversationId) {
+          return { ...c, name };
+        }
+        return c;
+      });
+      persistWizardState({ ...state, conversations } as WizardState);
+      return { conversations };
+    });
+  },
+
+  /** 删除会话 */
+  deleteConversation: (id: string) => {
+    const state = get();
+    let conversations = state.conversations.filter((c) => c.id !== id);
+
+    // 如果删除的是当前活跃会话
+    if (id === state.activeConversationId) {
+      if (conversations.length > 0) {
+        // 切换到最近的一个会话
+        const latest = conversations.reduce((a, b) =>
+          a.createdAt > b.createdAt ? a : b,
+        );
+        const targetMessages = latest.messages.slice(-MAX_MESSAGES_PER_CONVERSATION);
+        const next: Partial<WizardState> = {
+          step: "chat" as Step,
+          completedSteps: ["chat"] as Step[],
+          checklist: DEFAULT_CHECKLIST.map((item) => ({ ...item, status: "pending" as const })),
+          isGenerating: false,
+          generationCompleted: false,
+          wizardMessages: targetMessages,
+          wizardFileContents: [],
+          wizardHarnessEvents: [],
+          conversations,
+          activeConversationId: latest.id,
+        };
+        persistWizardState({ ...state, ...next } as WizardState);
+        set(next);
+      } else {
+        // 没有剩余会话了，创建一个新的空会话
+        const newId = createConversationId();
+        conversations = [{
+          id: newId,
+          name: undefined,
+          messages: [],
+          createdAt: Date.now(),
+        }];
+        const next: Partial<WizardState> = {
+          step: "chat" as Step,
+          completedSteps: ["chat"] as Step[],
+          checklist: DEFAULT_CHECKLIST.map((item) => ({ ...item, status: "pending" as const })),
+          isGenerating: false,
+          generationCompleted: false,
+          wizardMessages: [],
+          wizardFileContents: [],
+          wizardHarnessEvents: [],
+          conversations,
+          activeConversationId: newId,
+        };
+        persistWizardState({ ...state, ...next } as WizardState);
+        set(next);
+      }
+    } else {
+      // 删除的不是活跃会话，仅移除
+      set((s) => {
+        persistWizardState({ ...s, conversations } as WizardState);
+        return { conversations };
+      });
+    }
   },
 }));
 

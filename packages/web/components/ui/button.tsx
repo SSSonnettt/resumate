@@ -4,35 +4,37 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button relative inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap outline-none select-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[15px]",
   {
     variants: {
       variant: {
-        default: "bg-primary text-white shadow-[0_0_20px_var(--primary-glow)] hover:bg-primary/85",
+        /* 主按钮 · 辉光鎏金 */
+        default:
+          "bg-primary text-primary-foreground shadow-[0_0_28px_var(--primary-glow),0_4px_16px_rgba(0,0,0,0.35)] active:scale-[0.97] active:shadow-[0_0_12px_var(--primary-glow)] disabled:opacity-40 disabled:shadow-none",
+        /* 玻璃药丸 · 磁悬浮 */
         glass:
-          "border-white/[0.06] bg-white/[0.03] text-foreground backdrop-blur-sm hover:bg-white/[0.06]",
+          "border border-white/[0.05] bg-white/[0.02] text-foreground/85 backdrop-blur-lg shadow-[0_4px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-white/[0.09] hover:bg-white/[0.04] hover:shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.04)] active:scale-[0.97] active:bg-white/[0.06]",
+        /* 轮廓 · 纤细边框 */
         outline:
-          "border-white/[0.08] bg-transparent text-foreground-dim hover:bg-white/[0.04] hover:text-foreground aria-expanded:bg-white/[0.04] aria-expanded:text-foreground",
+          "border border-white/[0.06] bg-transparent text-foreground-dim/80 hover:border-white/[0.1] hover:text-foreground hover:bg-white/[0.02] active:scale-[0.97]",
+        /* 次级 · 微光底色 */
         secondary:
-          "bg-white/[0.04] text-foreground-dim hover:bg-white/[0.08] hover:text-foreground aria-expanded:bg-white/[0.08] aria-expanded:text-foreground",
+          "bg-white/[0.03] text-foreground-dim/80 hover:bg-white/[0.06] hover:text-foreground active:scale-[0.97]",
+        /* 幽灵 · 透明悬停 */
         ghost:
-          "text-foreground-dim hover:bg-white/[0.04] hover:text-foreground aria-expanded:bg-white/[0.04] aria-expanded:text-foreground",
+          "text-foreground-dim/60 hover:bg-white/[0.03] hover:text-foreground active:scale-[0.97]",
+        /* 危险 · 暗红 */
         destructive:
-          "bg-destructive/[0.08] text-destructive hover:bg-destructive/[0.15] focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-destructive/[0.06] text-destructive/80 hover:bg-destructive/[0.1] hover:text-destructive active:scale-[0.97]",
+        link: "text-primary/80 underline-offset-4 hover:text-primary",
       },
       size: {
         default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 rounded-full px-2 text-xs in-data-[slot=button-group]:rounded-full has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-full px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-full has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
-        "icon-xs":
-          "size-6 rounded-full in-data-[slot=button-group]:rounded-full [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-full in-data-[slot=button-group]:rounded-full",
-        "icon-lg": "size-9",
+          "h-9 gap-1.5 rounded-full px-4 text-[13px]",
+        sm: "h-8 gap-1 rounded-full px-3 text-[11px]",
+        lg: "h-10 gap-2 rounded-full px-5 text-sm",
+        icon: "size-9 rounded-full",
+        "icon-sm": "size-8 rounded-full",
       },
     },
     defaultVariants: {

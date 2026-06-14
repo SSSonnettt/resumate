@@ -1,18 +1,38 @@
 "use client";
-import { memo, useRef, useState, useEffect, useCallback } from "react";
+import { memo, useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { useResumeStore } from "@/lib/stores/resume-store";
 import { useWizardStore } from "@/lib/stores/wizard-store";
-import { ResumeRenderer } from "@/components/renderers/resume-renderer";
-import { getTemplate } from "@/lib/templates";
+import { ShadowRenderer } from "@/components/themes/shadow-renderer";
 import { A4_PX } from "@/lib/page-layout";
+import type { ResumeData } from "@resumate/shared";
 
-export function ResumeCanvas() {
+interface Props {
+  /** 控制各 section 在预览中的可见性；不传则全部显示 */
+  visibleSections?: Record<string, boolean>;
+  /** 外层容器 DOM id，供 PDF 导出等场景定位元素 */
+  containerId?: string;
+}
+
+export const ResumeCanvas = memo(function ResumeCanvas({ visibleSections, containerId }: Props) {
   const resume = useResumeStore((s) => s.resume);
   const completedSteps = useWizardStore((s) => s.completedSteps);
-  const goBack = useWizardStore((s) => s.goBack);
 
-  const template = getTemplate(resume.theme.templateId);
-  const { data, theme } = resume;
+  const { data: rawData, themeSlug } = resume;
+
+  /** 根据 visibleSections 过滤简历数据 */
+  const data: ResumeData = useMemo(() => {
+    if (!visibleSections) return rawData;
+    const filtered: ResumeData = {};
+    const allKeys = Object.keys(rawData) as (keyof ResumeData)[];
+    for (const key of allKeys) {
+      const sectionKey = String(key);
+      // visibleSections 中未定义或为 true 的 section 保留
+      if (visibleSections[sectionKey] !== false) {
+        (filtered as Record<string, unknown>)[sectionKey] = rawData[key];
+      }
+    }
+    return filtered;
+  }, [rawData, visibleSections]);
 
   // ---- A4 等比缩放 ----
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -51,19 +71,17 @@ export function ResumeCanvas() {
   useEffect(() => {
     const cleanup = updateWrapperHeight();
     return cleanup;
-  }, [updateWrapperHeight, data, theme]);
+  }, [updateWrapperHeight, data, themeSlug]);
 
   const hasPassedGeneration = completedSteps.includes("generating");
+  // 即使已通过生成步骤，如果简历数据中没有 basics（姓名等基本信息），说明数据为空
+  const hasResumeData = Boolean(rawData.basics);
 
-  const hasContent =
-    data.basics?.name ||
-    (data.work && data.work.length > 0) ||
-    (data.education && data.education.length > 0) ||
-    (data.skills && data.skills.length > 0);
-
-  if (!hasContent || !template) {
+  // 无简历数据 → 提示用户（无论是否通过生成步骤）
+  if (!hasPassedGeneration || !hasResumeData) {
     return (
       <div
+        id={containerId}
         ref={wrapperRef}
         className="mx-auto"
         style={{
@@ -79,34 +97,42 @@ export function ResumeCanvas() {
             transformOrigin: "top left",
           }}
         >
+          {/* Double-Bezel 外壳 */}
           <div
-            className="a4-page mx-auto rounded-2xl border border-white/[0.08] bg-white/[0.015] p-0.5 shadow-[0_8px_40px_rgba(0,0,0,0.4)]"
+            className="a4-page mx-auto rounded-[1.75rem] border border-white/[0.04] bg-white/[0.005] p-[3px] shadow-[0_16px_56px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.02)]"
             style={{ width: A4_PX.width, contain: "layout style" }}
           >
+            {/* Double-Bezel 内核 */}
             <div
-              className="rounded-[calc(1.5rem-0.125rem)] bg-white p-10 shadow-sm"
+              className="rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-white p-10 shadow-sm"
               style={{ minHeight: A4_PX.height - 4 }}
             >
-              {hasPassedGeneration ? (
-                <div className="flex flex-col items-center justify-center pt-20 text-center">
-                  <p className="text-sm font-medium text-slate-700">
-                    AI 生成未产出内容
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">
-                    管线可能因数据不足或格式错误未能生成简历内容。
-                  </p>
-                  <button
-                    onClick={goBack}
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+              {/* 空状态：渐现动画 */}
+              <div className="flex h-full flex-col items-center justify-center pt-20 animate-reveal-fade-up">
+                {/* 呼吸辉光占位 */}
+                <div className="mb-6 flex size-16 items-center justify-center rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.04]">
+                  <svg
+                    className="size-6 text-slate-300/40 animate-glow-breathe"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
                   >
-                    返回上一步重试
-                  </button>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M12 18v-6" />
+                    <path d="M9 15h6" />
+                  </svg>
                 </div>
-              ) : (
-                <p className="pt-20 text-center text-slate-300">
-                  从左侧添加内容开始编辑简历
+                <p className="text-sm font-medium text-slate-400 tracking-tight">
+                  {!hasPassedGeneration
+                    ? "从左侧添加内容开始编辑简历"
+                    : "简历数据为空，请返回上一步重新生成"}
                 </p>
-              )}
+                <p className="mt-2 text-xs text-slate-300/50">
+                  完成 AI 生成后即可在此编辑
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -114,8 +140,11 @@ export function ResumeCanvas() {
     );
   }
 
+  // 已通过生成步骤 → 始终渲染 ShadowRenderer（主题能处理空数据）
+
   return (
     <div
+      id={containerId}
       ref={wrapperRef}
       className="mx-auto"
       style={{
@@ -132,23 +161,23 @@ export function ResumeCanvas() {
           transformOrigin: "top left",
         }}
       >
+        {/* Double-Bezel 外壳 · 深影 */}
         <div
-          className="a4-page mx-auto rounded-2xl border border-white/[0.08] bg-white/[0.015] p-0.5 shadow-[0_8px_40px_rgba(0,0,0,0.4)]"
+          className="a4-page mx-auto rounded-[1.75rem] border border-white/[0.04] bg-white/[0.005] p-[3px] shadow-[0_16px_56px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.02)]"
           style={{ width: A4_PX.width }}
         >
+          {/* Double-Bezel 内核 · A4白纸 */}
           <div
-            className="rounded-[calc(1.5rem-0.125rem)] bg-white p-10 shadow-sm"
+            className="rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-white p-10 shadow-sm"
             style={{ minHeight: A4_PX.height - 4 }}
           >
-            <ResumeRenderer
+            <ShadowRenderer
               data={data}
-              template={template}
-              colors={theme.colors}
-              typography={theme.typography}
+              themeSlug={themeSlug}
             />
           </div>
         </div>
       </div>
     </div>
   );
-}
+});

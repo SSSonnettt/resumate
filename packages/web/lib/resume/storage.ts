@@ -8,9 +8,9 @@ export const RESUME_STORAGE_KEY = "resumate-data";
 
 /**
  * 从 localStorage 加载简历数据，自动检测版本并迁移。
- * v3: 直接加载
- * v2: 自动迁移到 v3
- * v1: 暂不支持
+ * v4: 直接加载
+ * v3: 自动迁移到 v4
+ * v2: 自动迁移到 v3 再迁移到 v4
  */
 export function loadResumeFromStorage(storage: Storage): Resume | null {
   try {

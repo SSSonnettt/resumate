@@ -33,15 +33,15 @@ export function SkillsForm({ data, onChange }: Props) {
     if (!kw) return;
     const skill = data[skillIndex];
     if (!skill) return;
-    if (skill.keywords.includes(kw)) return;
-    updateSkill(skillIndex, { keywords: [...skill.keywords, kw] });
+    if ((skill.keywords ?? []).includes(kw)) return;
+    updateSkill(skillIndex, { keywords: [...(skill.keywords ?? []), kw] });
     setKeywordInputs((prev) => ({ ...prev, [skillIndex]: "" }));
   }
 
   function removeKeyword(skillIndex: number, kwIndex: number) {
     const skill = data[skillIndex];
     if (!skill) return;
-    updateSkill(skillIndex, { keywords: skill.keywords.filter((_, i) => i !== kwIndex) });
+    updateSkill(skillIndex, { keywords: (skill.keywords ?? []).filter((_, i) => i !== kwIndex) });
   }
 
   return (
@@ -90,7 +90,7 @@ export function SkillsForm({ data, onChange }: Props) {
               </button>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {skill.keywords.map((kw, kwIndex) => (
+              {(skill.keywords ?? []).map((kw, kwIndex) => (
                 <span
                   key={kwIndex}
                   className="inline-flex items-center gap-1 rounded-full bg-primary/[0.08] px-2.5 py-1 text-xs font-medium text-primary"

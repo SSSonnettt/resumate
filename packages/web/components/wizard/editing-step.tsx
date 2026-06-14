@@ -1,13 +1,17 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { ResumeCanvas } from "@/components/editor/resume-canvas";
-import { StylePanel } from "@/components/editor/style-panel";
 import { SectionDataEditor } from "@/components/editor/module-data-editor";
 import { useResumeStore } from "@/lib/stores/resume-store";
-import { getTemplate } from "@/lib/templates";
+import { THEMES } from "@/lib/themes/registry";
+import { CaretDown, CaretRight, Eye, EyeSlash, DownloadSimple, Printer } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus } from "@phosphor-icons/react";
+import { A4_PX } from "@/lib/page-layout";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 const SECTION_LABELS: Record<string, string> = {
   basics: "基本信息",
@@ -28,70 +32,264 @@ export function EditingStep() {
   const resume = useResumeStore((s) => s.resume);
   const updateData = useResumeStore((s) => s.updateData);
   const [editingSection, setEditingSection] = useState<string | null>(null);
+  // 折叠面板状态：记录哪些 section 被展开
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  // 控制每个 section 在简历预览中的可见性（默认全部可见）
+  const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const key of Object.keys(SECTION_LABELS)) {
+      initial[key] = true;
+    }
+    return initial;
+  });
 
-  const template = getTemplate(resume.theme.templateId);
-
-  // Build list of available sections from template config
   const availableSections = useMemo(() => {
-    if (!template) return [];
-    return (Object.entries(template.sections) as [string, { enabled?: boolean; order: number; title?: string } | undefined][])
-      .filter(([, cfg]) => cfg?.enabled)
-      .sort(([, a], [, b]) => (a?.order ?? 999) - (b?.order ?? 999))
-      .map(([key, cfg]) => ({
-        key,
-        label: cfg?.title || SECTION_LABELS[key] || key,
-        order: cfg?.order ?? 999,
-      }));
-  }, [template]);
+    const sections: Array<{ key: string; label: string; order: number }> = [];
+    let order = 0;
+    for (const [key, label] of Object.entries(SECTION_LABELS)) {
+      sections.push({ key, label, order: order++ });
+    }
+    return sections;
+  }, []);
 
   const sectionData = editingSection
     ? (resume.data as Record<string, unknown>)[editingSection]
     : undefined;
 
+  const toggleSection = (key: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+    // 切换编辑区
+    setEditingSection((prev) => (prev === key ? null : key));
+  };
+
+  const toggleSectionVisible = useCallback((key: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setVisibleSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  // ---- 导出相关 ----
+  const [exporting, setExporting] = useState(false);
+
+  /** 使用 jsPDF + html2canvas 生成真正的 PDF 下载文件 */
+  async function downloadPDF() {
+    setExporting(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const html2canvas = (await import("html2canvas")).default;
+
+      const container = document.getElementById("resume-preview");
+      if (!container) {
+        alert("未找到简历预览元素");
+        return;
+      }
+
+      const pageElements = container.querySelectorAll<HTMLElement>(".a4-page");
+      if (pageElements.length === 0) {
+        alert("未找到简历页面内容");
+        return;
+      }
+
+      // Shadow DOM 内容克隆到 light DOM 供 html2canvas 截图
+      const shadowHosts = container.querySelectorAll<HTMLElement>(".shadow-resume-host");
+      const clones: Array<{ host: HTMLElement; original: HTMLElement }> = [];
+      for (const host of shadowHosts) {
+        if (host.shadowRoot) {
+          const clone = document.createElement("div");
+          clone.innerHTML = host.shadowRoot.innerHTML;
+          clone.style.cssText = "position:absolute;left:0;top:0;width:100%;";
+          host.style.position = "relative";
+          host.appendChild(clone);
+          clones.push({ host, original: clone });
+        }
+      }
+
+      // 临时取消缩放，以全尺寸截取
+      const contentDiv = container.firstElementChild as HTMLElement | null;
+      const origTransform = contentDiv?.style.transform ?? "";
+      const origWidth = container.style.width;
+      const origHeight = container.style.height;
+      const origOverflow = container.style.overflow;
+
+      if (contentDiv) contentDiv.style.transform = "none";
+      container.style.width = A4_PX.width + "px";
+      container.style.height = "auto";
+      container.style.overflow = "visible";
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const a4Width = 210;
+      const a4Height = 297;
+
+      for (let i = 0; i < pageElements.length; i++) {
+        const pageEl = pageElements[i];
+        const canvas = await html2canvas(pageEl, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        pdf.addImage(imgData, "PNG", 0, 0, a4Width, a4Height);
+      }
+
+      // 恢复缩放
+      if (contentDiv) contentDiv.style.transform = origTransform;
+      container.style.width = origWidth;
+      container.style.height = origHeight;
+      container.style.overflow = origOverflow;
+
+      // 清理克隆元素
+      for (const { original } of clones) {
+        original.remove();
+      }
+
+      pdf.save("resume.pdf");
+    } catch (err) {
+      console.warn("PDF 导出失败:", err);
+      alert("PDF 导出失败，请尝试使用打印选项。");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  /** 浏览器打印 */
+  function printPDF() {
+    document.body.classList.add("print-mode");
+    try {
+      window.print();
+    } finally {
+      document.body.classList.remove("print-mode");
+    }
+  }
+
   return (
-    <div className="flex h-full w-full min-w-0">
-      {/* 左侧：简历画布 — 70% */}
-      <div className="flex-[7] min-w-0 flex h-full items-start justify-center overflow-auto p-6">
-        <ResumeCanvas />
-      </div>
+    <ResizablePanelGroup orientation="horizontal" className="min-w-0">
+      {/* 左侧：简历画布 */}
+      <ResizablePanel defaultSize={75} minSize={35}>
+        <div className="h-full min-w-0 flex items-start justify-center overflow-auto p-3">
+          <ResumeCanvas visibleSections={visibleSections} containerId="resume-preview" />
+        </div>
+      </ResizablePanel>
 
-      {/* 右侧：统一面板 — Double-Bezel — 30% */}
-      <div className="flex-[3] min-w-0 flex h-full flex-col p-3">
-        <div className="flex h-full flex-col rounded-[2rem] border border-white/[0.06] bg-white/[0.02] p-1.5">
-          <div className="flex h-full flex-col rounded-[calc(2rem-0.375rem)] border border-white/[0.04] bg-white/[0.015] shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)]">
-            <ScrollArea className="flex-1">
-              <div className="space-y-4 p-4">
-                {/* 模板与样式（始终可见） */}
-                <StylePanel />
+      <ResizableHandle withHandle />
 
-                {/* 章节编辑区 */}
-                {availableSections.length > 0 && (
-                  <>
-                    <div className="border-t border-white/[0.06]" />
+      {/* 右侧：样式/内容面板 · Double-Bezel 玻璃 */}
+      <ResizablePanel defaultSize={25} minSize={18}>
+        <aside className="h-full w-full flex flex-col gap-3 overflow-y-auto p-3">
+          <div className="flex flex-col gap-3 rounded-[1.75rem] border border-white/[0.05] bg-white/[0.015] p-[3px] shadow-[0_12px_48px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]">
+            <div className="flex flex-col gap-3 rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-[hsl(240,10%,3%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          {/* ---- 导出按钮 ---- */}
+          <div className="space-y-2">
+            <Button
+              onClick={downloadPDF}
+              disabled={exporting}
+              className="group w-full h-10 rounded-full bg-primary shadow-[0_0_20px_var(--primary-glow)]"
+            >
+              <span className="flex items-center justify-center rounded-full bg-white/20 p-1 transition-all duration-300 group-hover:scale-105" style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
+                <DownloadSimple size={14} weight="light" />
+              </span>
+              <span className="ml-2 text-sm font-medium">
+                {exporting ? "导出中..." : "下载 PDF"}
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={printPDF}
+              className="w-full rounded-full"
+            >
+              <Printer size={15} weight="light" className="mr-1.5" />
+              浏览器打印
+            </Button>
+          </div>
 
-                    {/* 章节快捷切换 */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {availableSections.map((section) => (
-                        <button
-                          key={section.key}
-                          onClick={() =>
-                            setEditingSection(
-                              editingSection === section.key ? null : section.key,
-                            )
-                          }
-                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                            section.key === editingSection
-                              ? "bg-primary/15 text-primary"
-                              : "bg-white/[0.03] text-foreground-dim hover:bg-white/[0.06]"
-                          }`}
-                        >
-                          {section.label}
-                        </button>
-                      ))}
-                    </div>
+          {/* ---- 简历模版 ---- */}
+          <section className="space-y-3">
+            <h3 className="flex items-center gap-1.5 text-xs font-semibold text-foreground-dim">
+              <span>简历模版</span>
+              <a
+                href="https://jsonresume.org/themes/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-normal text-primary/70 hover:text-primary transition-colors"
+              >
+                预览
+              </a>
+            </h3>
+            <select
+              value={resume.themeSlug}
+              onChange={(e) => useResumeStore.getState().setThemeSlug(e.target.value)}
+              className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 text-xs outline-none transition-colors focus:border-primary/25"
+            >
+              {THEMES.map((theme) => (
+                <option key={theme.slug} value={theme.slug}>
+                  {theme.nameZh}
+                </option>
+              ))}
+            </select>
+          </section>
 
-                    {/* 章节内容编辑 */}
-                    {editingSection && sectionData !== undefined && (
+          {/* ---- 简历元数据 ---- */}
+          <section className="space-y-3">
+            <h3 className="text-xs font-semibold text-foreground-dim">简历元数据</h3>
+          </section>
+
+          {/* ---- 内容章节（可折叠面板）---- */}
+          <div className="space-y-0.5">
+            {availableSections.map((section) => {
+              const isExpanded = !!expandedSections[section.key];
+
+              return (
+                <div key={section.key}>
+                  {/* 折叠标题栏 */}
+                  <button
+                    onClick={() => toggleSection(section.key)}
+                    className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-all active:scale-[0.98] ${
+                      section.key === editingSection
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground-dim hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <span className="shrink-0">
+                      {isExpanded ? <CaretDown size={12} weight="bold" /> : <CaretRight size={12} weight="bold" />}
+                    </span>
+                    <span className="truncate flex-1">{section.label}</span>
+                    {/* 可见性开关 */}
+                    <span
+                      role="switch"
+                      aria-checked={visibleSections[section.key]}
+                      tabIndex={0}
+                      onClick={(e) => toggleSectionVisible(section.key, e)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          toggleSectionVisible(section.key, e as unknown as React.MouseEvent);
+                        }
+                      }}
+                      className={`ml-auto inline-flex shrink-0 items-center rounded-full p-0.5 transition-colors ${
+                        visibleSections[section.key]
+                          ? "text-primary hover:bg-primary/10"
+                          : "text-foreground-muted/30 hover:bg-white/[0.04] hover:text-foreground-muted/60"
+                      }`}
+                      title={visibleSections[section.key] ? "在简历中显示" : "在简历中隐藏"}
+                    >
+                      {visibleSections[section.key] ? (
+                        <Eye size={13} weight="fill" />
+                      ) : (
+                        <EyeSlash size={13} />
+                      )}
+                    </span>
+                  </button>
+
+                  {/* 展开后的编辑区 */}
+                  {isExpanded && sectionData !== undefined && section.key === editingSection && (
+                    <div className="mx-2.5 mt-1 mb-2">
                       <SectionDataEditor
                         sectionKey={editingSection}
                         data={sectionData as Record<string, unknown>}
@@ -101,14 +299,16 @@ export function EditingStep() {
                           });
                         }}
                       />
-                    )}
-                  </>
-                )}
-              </div>
-            </ScrollArea>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </div>
-    </div>
+          </div>
+          </div>
+        </aside>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

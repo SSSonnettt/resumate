@@ -1,6 +1,5 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useResumeStore } from "@/lib/stores/resume-store";
 import { Button } from "@/components/ui/button";
 import { AIEditInput } from "./ai-edit-input";
 import { getFormForSection } from "./module-forms";

@@ -35,10 +35,10 @@ export function InfoChecklist() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-white/[0.06] p-4">
-        <h3 className="text-sm font-semibold">信息收集清单</h3>
-        <p className="mt-1 text-xs text-foreground-dim">
-          逐项提供信息，AI 会引导你完成
+      <div className="border-b border-white/[0.04] p-4">
+        <h3 className="text-sm font-semibold tracking-tight">信息收集清单</h3>
+        <p className="mt-1 text-xs text-foreground-muted">
+          AI 会逐步引导你完成每一项
         </p>
       </div>
 
@@ -56,14 +56,13 @@ export function InfoChecklist() {
                 exit={{ scale: 0.95, opacity: 0 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
               >
-                {/* 纯展示，状态仅由 AI 驱动更新 */}
                 <div
-                  className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm ${
+                  className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-300 ${
                     isCollected
-                      ? "border border-primary/10 bg-primary/[0.06] text-primary"
+                      ? "border border-primary/[0.06] bg-primary/[0.04] text-primary"
                       : isSkipped
-                        ? "text-foreground-dim/40 line-through"
-                        : "text-foreground-muted"
+                        ? "text-foreground-dim/25 line-through"
+                        : "text-foreground-muted/50"
                   }`}
                 >
                   {isCollected ? (
@@ -72,15 +71,15 @@ export function InfoChecklist() {
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 500, damping: 20 }}
                     >
-                      <CheckCircle size={16} weight="light" className="shrink-0 text-primary" />
+                      <CheckCircle size={15} weight="light" className="shrink-0 text-primary" />
                     </motion.span>
                   ) : isSkipped ? (
-                    <Minus size={16} weight="light" className="shrink-0 text-foreground-muted/30" />
+                    <Minus size={15} weight="light" className="shrink-0 text-foreground-muted/15" />
                   ) : (
-                    <Circle size={16} weight="light" className="shrink-0 text-foreground-muted/20" />
+                    <Circle size={15} weight="light" className="shrink-0 text-foreground-muted/10" />
                   )}
-                  <span className="flex-1">{item.label}</span>
-                  <span className="text-xs opacity-60">
+                  <span className="flex-1 font-medium">{item.label}</span>
+                  <span className="text-[11px] opacity-50">
                     {isCollected
                       ? "已收集"
                       : isSkipped
@@ -94,19 +93,19 @@ export function InfoChecklist() {
         </AnimatePresence>
       </ul>
 
-      <div className="border-t border-white/[0.06] p-4">
+      <div className="border-t border-white/[0.04] p-4">
         <div className="mb-2 flex items-center justify-between text-xs text-foreground-dim">
           <span>收集进度</span>
-          <span>
+          <span className="tabular-nums">
             {collectedCount}/{checklist.length}
           </span>
         </div>
         <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.04]">
           <motion.div
-            className="h-full rounded-full bg-primary shadow-[0_0_8px_var(--primary-glow)]"
+            className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary shadow-[0_0_8px_var(--primary-glow)]"
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
-            transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+            transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
           />
         </div>
 

@@ -208,19 +208,14 @@ function createResumeGenerationPlan(
         compose: ({ stepResults }) => {
           const refineResult = stepResults.refine as Record<string, unknown> | undefined;
           const bestCandidate = (refineResult?.skipped ? stepResults.generate : stepResults.refine);
-          // 将 JSON Resume 数据包装为 Resume 格式
+          // 将 JSON Resume 数据包装为 ResumeV4 格式
           const wrapResume = (data: unknown) => {
             const parsed = jsonResumeSchema.safeParse(data);
             if (parsed.success) {
               return resumeSchema.parse({
                 id: "generated",
                 data: parsed.data,
-                theme: {
-                  templateId: "minimal-professional",
-                  colors: { primary: "#1e293b", primaryLight: "#475569", primaryDark: "#0f172a", accent: "#2563eb", background: "#ffffff", surface: "#f8fafc", textPrimary: "#0f172a", textSecondary: "#475569", textMuted: "#94a3b8", border: "#e2e8f0", divider: "#cbd5e1" },
-                  typography: { fontFamily: "sans", scale: { h1: "text-3xl leading-10 font-bold", h2: "text-xs leading-5 font-semibold uppercase tracking-[0.2em]", h3: "text-sm leading-5 font-semibold", body: "text-sm leading-6", small: "text-xs leading-5", caption: "text-[10px] leading-4" } },
-                  spacing: "normal",
-                },
+                themeSlug: "flat",
               });
             }
             return null;
@@ -233,12 +228,7 @@ function createResumeGenerationPlan(
           return resumeSchema.parse({
             id: "fallback",
             data: {},
-            theme: {
-              templateId: "minimal-professional",
-              colors: { primary: "#1e293b", primaryLight: "#475569", primaryDark: "#0f172a", accent: "#2563eb", background: "#ffffff", surface: "#f8fafc", textPrimary: "#0f172a", textSecondary: "#475569", textMuted: "#94a3b8", border: "#e2e8f0", divider: "#cbd5e1" },
-              typography: { fontFamily: "sans", scale: { h1: "text-3xl leading-10 font-bold", h2: "text-xs leading-5 font-semibold uppercase tracking-[0.2em]", h3: "text-sm leading-5 font-semibold", body: "text-sm leading-6", small: "text-xs leading-5", caption: "text-[10px] leading-4" } },
-              spacing: "normal",
-            },
+            themeSlug: "flat",
           });
         },
       },

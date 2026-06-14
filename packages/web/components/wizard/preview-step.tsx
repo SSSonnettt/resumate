@@ -2,18 +2,18 @@
 import { useState } from "react";
 import { Printer, FileText, DownloadSimple } from "@phosphor-icons/react";
 import { useResumeStore } from "@/lib/stores/resume-store";
-import { ResumeRenderer } from "@/components/renderers/resume-renderer";
-import { templates, getTemplate } from "@/lib/templates";
+import { ShadowRenderer } from "@/components/themes/shadow-renderer";
+import { ThemeGallery } from "@/components/themes/theme-gallery";
 import { A4_PX } from "@/lib/page-layout";
 import { Button } from "@/components/ui/button";
 
 export function PreviewStep() {
   const resume = useResumeStore((s) => s.resume);
-  const setTemplate = useResumeStore((s) => s.setTemplate);
+  const setThemeSlug = useResumeStore((s) => s.setThemeSlug);
   const [exporting, setExporting] = useState(false);
 
-  const template = getTemplate(resume.theme.templateId);
-  const { data, theme } = resume;
+  const { data, themeSlug } = resume;
+  const hasResumeData = Boolean(data.basics);
 
   /** 使用 jsPDF + html2canvas 生成真正的 PDF 下载文件（逐页渲染） */
   async function downloadPDF() {
@@ -35,6 +35,20 @@ export function PreviewStep() {
         return;
       }
 
+      // Shadow DOM 内容克隆到 light DOM 供 html2canvas 截图
+      const shadowHosts = container.querySelectorAll<HTMLElement>(".shadow-resume-host");
+      const clones: Array<{ host: HTMLElement; original: HTMLElement }> = [];
+      for (const host of shadowHosts) {
+        if (host.shadowRoot) {
+          const clone = document.createElement("div");
+          clone.innerHTML = host.shadowRoot.innerHTML;
+          clone.style.cssText = "position:absolute;left:0;top:0;width:100%;";
+          host.style.position = "relative";
+          host.appendChild(clone);
+          clones.push({ host, original: clone });
+        }
+      }
+
       const pdf = new jsPDF("p", "mm", "a4");
       const a4Width = 210; // mm
       const a4Height = 297; // mm
@@ -54,6 +68,11 @@ export function PreviewStep() {
         }
 
         pdf.addImage(imgData, "PNG", 0, 0, a4Width, a4Height);
+      }
+
+      // 清理克隆元素
+      for (const { original } of clones) {
+        original.remove();
       }
 
       pdf.save("resume.pdf");
@@ -84,56 +103,51 @@ export function PreviewStep() {
           className="mx-auto"
           style={{ width: A4_PX.width }}
         >
-          {template ? (
+          {/* Double-Bezel A4 页面 */}
+          <div
+            className="a4-page mx-auto rounded-[1.75rem] border border-white/[0.04] bg-white/[0.005] p-[3px] shadow-[0_16px_56px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.02)]"
+            style={{ width: A4_PX.width }}
+          >
             <div
-              className="a4-page mx-auto rounded-2xl border border-white/[0.08] bg-white/[0.015] p-0.5 shadow-[0_8px_40px_rgba(0,0,0,0.4)]"
-              style={{ width: A4_PX.width }}
+              className="rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-white p-10 shadow-sm"
+              style={{ minHeight: A4_PX.height - 4 }}
             >
-              <div
-                className="rounded-[calc(1.5rem-0.125rem)] bg-white p-10 shadow-sm"
-                style={{ minHeight: A4_PX.height - 4 }}
-              >
-                <ResumeRenderer
+              {hasResumeData ? (
+                <ShadowRenderer
                   data={data}
-                  template={template}
-                  colors={theme.colors}
-                  typography={theme.typography}
+                  themeSlug={themeSlug}
                 />
-              </div>
+              ) : (
+                <p className="pt-20 text-center text-slate-300">
+                  简历数据为空，请返回上一步重新生成
+                </p>
+              )}
             </div>
-          ) : (
-            <p className="pt-20 text-center text-slate-300">未找到模板</p>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* 右侧操作面板 — Double-Bezel */}
-      <aside className="w-[260px] shrink-0 p-3">
-        <div className="flex h-full flex-col rounded-[2rem] border border-white/[0.06] bg-white/[0.02] p-1.5">
-          <div className="flex h-full flex-col rounded-[calc(2rem-0.375rem)] border border-white/[0.04] bg-white/[0.015] shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)] p-4">
-            <div className="space-y-5">
-              <section>
-                <p className="text-[10px] font-medium tracking-[0.15em] text-foreground-dim uppercase">Export</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <FileText size={16} weight="light" className="text-primary" />
-                  <h2 className="text-sm font-semibold">预览导出</h2>
-                </div>
+      {/* 右侧操作面板 · Double-Bezel 玻璃 */}
+      <aside className="w-[272px] shrink-0 p-3">
+        <div className="flex h-full flex-col gap-5 rounded-[1.75rem] border border-white/[0.05] bg-white/[0.015] p-[3px] shadow-[0_12px_48px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]">
+          <div className="flex h-full flex-col gap-5 rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-[hsl(240,10%,3%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          <div className="space-y-5">
+            <section>
+              <p className="text-[10px] font-medium tracking-wider text-foreground-muted/40 uppercase">
+                导出
+              </p>
+              <div className="mt-1.5 flex items-center gap-2">
+                <FileText size={15} weight="light" className="text-primary/70" />
+                <h2 className="text-sm font-semibold">预览导出</h2>
+              </div>
 
                 <div className="mt-4 space-y-4 text-sm">
-                  {/* 模板切换 */}
+                  {/* 主题切换 */}
                   <div>
-                    <label className="text-xs text-foreground-dim">模板</label>
-                    <select
-                      value={resume.theme.templateId}
-                      onChange={(e) => setTemplate(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 py-1.5 text-sm outline-none transition-colors focus:border-primary/25"
-                    >
-                      {templates.map((t: { id: string; nameZh?: string; name: string }) => (
-                        <option key={t.id} value={t.id} className="bg-background">
-                          {t.nameZh || t.name}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="text-xs text-foreground-dim">主题</label>
+                    <div className="mt-1 max-h-[320px] overflow-y-auto">
+                      <ThemeGallery currentSlug={themeSlug} onSelect={setThemeSlug} />
+                    </div>
                   </div>
 
                   <div className="space-y-1 text-foreground-dim">
@@ -177,8 +191,8 @@ export function PreviewStep() {
                 </Button>
               </div>
 
-              <section className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3">
-                <p className="text-xs leading-5 text-foreground-dim">
+              <section className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-3">
+                <p className="text-xs leading-5 text-foreground-muted">
                   下载 PDF 为 A4 尺寸高质量文件。打印选项请在弹窗中选择 A4、缩放 100%。
                 </p>
               </section>

@@ -1,14 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Plus, Trash, Globe, Envelope, Phone, MapPin } from "@phosphor-icons/react";
+import { Plus, Trash } from "@phosphor-icons/react";
 import type { Basics } from "@resumate/shared";
-
-const CONTACT_ICONS = [
-  { value: "mail", icon: Envelope, label: "邮箱" },
-  { value: "phone", icon: Phone, label: "电话" },
-  { value: "globe", icon: Globe, label: "链接" },
-  { value: "map-pin", icon: MapPin, label: "地址" },
-];
 
 interface Props {
   data: Basics;
