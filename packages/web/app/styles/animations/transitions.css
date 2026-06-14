@@ -1,0 +1,9 @@
+/* ======== 渐入动画 · Staggered Reveal ======== */
+.reveal-fade-up {
+  animation: reveal-fade-up 0.8s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+.reveal-fade-up-delay-1 { animation-delay: 0.08s; }
+.reveal-fade-up-delay-2 { animation-delay: 0.16s; }
+.reveal-fade-up-delay-3 { animation-delay: 0.24s; }
+.reveal-fade-up-delay-4 { animation-delay: 0.32s; }
+.reveal-fade-up-delay-5 { animation-delay: 0.4s; }

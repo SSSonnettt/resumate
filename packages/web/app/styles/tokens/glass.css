@@ -1,0 +1,30 @@
+/* ======== Industrial Brutalist · 结构边框系统 ======== */
+
+/* NOTE: Industrial Brutalist 不使用玻璃/半透明效果。
+   所有变量简化为纯色边框和背景，用于替代原 glass-* 变量。 */
+
+:root {
+  /* 原 glass-bg → 文档纸底色 */
+  --glass-bg: 40 10% 93% / 1;
+  --glass-bg-raised: 48 15% 96% / 1;
+  --glass-bg-hover: 40 8% 88% / 1;
+
+  /* 原 glass-border → 可见结构线 */
+  --glass-border: 0 0% 4% / 0.15;
+  --glass-border-hover: 0 0% 4% / 0.3;
+
+  /* 原 glass-highlight → 移除（无玻璃内发光） */
+  --glass-highlight: 0 0% 0% / 0;
+
+  /* 原 glass-blur → 移除（无模糊） */
+  --glass-blur: 0px;
+  --glass-blur-heavy: 0px;
+
+  /* 阴影 → 移除（无投影） */
+  --glass-shadow: none;
+  --glass-shadow-raised: none;
+  --shadow-depth-sm: none;
+  --shadow-depth: none;
+  --shadow-depth-heavy: none;
+  --shadow-depth-modal: none;
+}

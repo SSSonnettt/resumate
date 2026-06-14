@@ -45,32 +45,32 @@ export function WizardShell() {
 
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden">
-      {/* ======== 浮空玻璃药丸导航栏 ======== */}
+      {/* ======== 工业导航栏 · 结构边框 ======== */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-sticky flex justify-center pt-4">
-        <div className="pointer-events-auto glass-pill mx-auto flex items-center gap-4 px-4 py-2 shadow-[0_4px_32px_rgba(0,0,0,0.45),inset_0_1px_0_hsl(var(--glass-highlight))]">
-          {/* Logo · 浮空标识 */}
+        <div className="pointer-events-auto mx-auto flex items-center gap-4 border-2 border-foreground/15 bg-background px-4 py-2">
+          {/* Logo · 碳墨标识 */}
           <div className="flex items-center gap-2.5">
-            <span className="flex size-6 items-center justify-center rounded-md bg-primary/[0.1] ring-1 ring-primary/10">
-              <span className="text-[11px] font-bold text-primary tracking-tighter">R</span>
+            <span className="flex size-6 items-center justify-center border-2 border-foreground/20 bg-foreground/5">
+              <span className="text-[11px] font-black text-foreground tracking-tighter">R</span>
             </span>
-            <span className="text-[13px] font-semibold tracking-tight text-foreground">Resumate</span>
+            <span className="text-[11px] font-black text-foreground tracking-tighter">[ RESUME GENERATION SYSTEM ]</span>
           </div>
 
           {/* 分割线 */}
-          <span className="h-4 w-px bg-white/[0.06]" aria-hidden="true" />
+          <span className="h-4 w-px bg-foreground/15" aria-hidden="true" />
 
-          {/* 步骤指示器 · 浮空嵌入 */}
+          {/* 步骤指示器 */}
           <StepIndicator />
 
           {/* 分割线 */}
-          <span className="h-4 w-px bg-white/[0.06]" aria-hidden="true" />
+          <span className="h-4 w-px bg-foreground/15" aria-hidden="true" />
 
-          {/* GitHub 链接 · 迷你药丸 */}
+          {/* GitHub 链接 */}
           <a
             href="https://github.com/SSSonnettt/resumate"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-full border border-white/[0.04] bg-white/[0.02] px-2.5 py-1 text-[11px] text-foreground-muted transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:border-white/[0.08] hover:bg-white/[0.04] hover:text-foreground active:scale-[0.97]"
+            className="inline-flex items-center gap-1 border-2 border-foreground/10 bg-transparent px-2.5 py-1 font-mono text-[11px] text-foreground-muted uppercase tracking-wider transition-colors duration-150 hover:border-foreground/30 hover:text-foreground"
           >
             <GithubLogo size={11} weight="light" />
             <span className="hidden sm:inline">GitHub</span>
@@ -78,20 +78,19 @@ export function WizardShell() {
         </div>
       </header>
 
-      {/* ======== 主体：侧边栏 + 内容区 · 非对称 Bento 布局 ======== */}
+      {/* ======== 主体：侧边栏 + 内容区 ======== */}
       <div className="flex flex-1 pt-16 overflow-hidden">
         <ConversationSidebar />
 
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* 内容区 · breathing room */}
           <main className="flex-1 overflow-hidden px-3 pb-3 md:px-5 md:pb-5">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={step}
-                initial={{ y: 16, opacity: 0, filter: "blur(3px)" }}
-                animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-                exit={{ y: -10, opacity: 0, filter: "blur(2px)" }}
-                transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
                 className="mx-auto h-full max-w-[1440px]"
               >
                 {stepContent}

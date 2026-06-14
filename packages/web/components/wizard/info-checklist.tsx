@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, Circle, Minus, Sparkle, ArrowRight, Info } from "@phosphor-icons/react";
 import { useWizardStore } from "@/lib/stores/wizard-store";
 import { Button } from "@/components/ui/button";
+import { stampVariants } from "@/lib/motion";
 
 export function InfoChecklist() {
   const checklist = useWizardStore((s) => s.checklist);
@@ -35,7 +36,7 @@ export function InfoChecklist() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-white/[0.04] p-4">
+      <div className="border-b border-[hsl(var(--divider))] p-4">
         <h3 className="text-sm font-semibold tracking-tight">信息收集清单</h3>
         <p className="mt-1 text-xs text-foreground-muted">
           AI 会逐步引导你完成每一项
@@ -44,20 +45,21 @@ export function InfoChecklist() {
 
       <ul className="flex-1 space-y-1 overflow-y-auto p-3">
         <AnimatePresence initial={false}>
-          {checklist.map((item) => {
+          {checklist.map((item, index) => {
             const isCollected = item.status === "collected";
             const isSkipped = item.status === "skipped";
 
             return (
               <motion.li
                 key={item.key}
-                initial={isCollected ? { scale: 0.95, opacity: 0 } : false}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                variants={stampVariants}
+                custom={index}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
               >
                 <div
-                  className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-300 ${
+                  className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-all duration-300 ${
                     isCollected
                       ? "border border-primary/[0.06] bg-primary/[0.04] text-primary"
                       : isSkipped
@@ -93,16 +95,16 @@ export function InfoChecklist() {
         </AnimatePresence>
       </ul>
 
-      <div className="border-t border-white/[0.04] p-4">
+      <div className="border-t border-[hsl(var(--divider))] p-4">
         <div className="mb-2 flex items-center justify-between text-xs text-foreground-dim">
           <span>收集进度</span>
           <span className="tabular-nums">
             {collectedCount}/{checklist.length}
           </span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.04]">
+        <div className="h-1.5 overflow-hidden bg-[hsl(var(--muted))]">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary shadow-[0_0_8px_var(--primary-glow)]"
+            className="h-full bg-accent"
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
             transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
@@ -139,17 +141,17 @@ export function InfoChecklist() {
         {/* 立即生成按钮 */}
         <div className="mt-3">
           {!hasUserMessages && (
-            <div className="mb-2 flex items-start gap-1.5 rounded-lg border border-secondary/15 bg-secondary/[0.04] px-2.5 py-1.5">
-              <Info size={12} weight="light" className="mt-0.5 shrink-0 text-secondary/70" />
-              <p className="text-[11px] leading-relaxed text-secondary/70">
+            <div className="mb-2 flex items-start gap-1.5 border border-foreground/10 bg-foreground/[0.04] px-2.5 py-1.5">
+              <Info size={12} weight="light" className="mt-0.5 shrink-0 text-foreground-muted" />
+              <p className="text-[11px] leading-relaxed text-foreground-muted">
                 请先在左侧对话框中输入你的经历信息
               </p>
             </div>
           )}
           {hasUserMessages && !allReady && hasAny && (
-            <div className="mb-2 flex items-start gap-1.5 rounded-lg border border-secondary/15 bg-secondary/[0.04] px-2.5 py-1.5">
-              <Info size={12} weight="light" className="mt-0.5 shrink-0 text-secondary/70" />
-              <p className="text-[11px] leading-relaxed text-secondary/70">
+            <div className="mb-2 flex items-start gap-1.5 border border-foreground/10 bg-foreground/[0.04] px-2.5 py-1.5">
+              <Info size={12} weight="light" className="mt-0.5 shrink-0 text-foreground-muted" />
+              <p className="text-[11px] leading-relaxed text-foreground-muted">
                 还有 {pendingCount} 项未收集，AI 将根据已有信息自动生成
               </p>
             </div>
@@ -160,9 +162,9 @@ export function InfoChecklist() {
             className="w-full"
           >
             <Sparkle size={15} weight="light" className="mr-1.5" />
-            {allReady ? "生成简历" : "立即生成"}
+            {allReady ? ">>> EXECUTE >>>" : ">>> EXECUTE >>>"}
             <span
-              className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/15 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-0.5 group-hover:scale-105"
+              className="ml-1 flex h-5 w-5 items-center justify-center bg-[hsl(var(--primary-foreground)/0.15)] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-0.5 group-hover:scale-105"
             >
               <ArrowRight size={11} weight="bold" />
             </span>

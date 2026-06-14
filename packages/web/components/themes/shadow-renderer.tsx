@@ -200,8 +200,8 @@ export function ShadowRenderer({ data, themeSlug }: Props) {
       {/* 错误状态 */}
       {status === "error" && (
         <div className="flex flex-col items-center justify-center gap-3 p-8 text-center">
-          <p className="text-sm text-red-500">主题渲染失败</p>
-          <p className="text-xs text-slate-400 max-w-xs break-all">
+          <p className="text-sm text-destructive">主题渲染失败</p>
+          <p className="text-xs text-foreground-muted max-w-xs break-all">
             {errorMessage}
           </p>
           <button
@@ -210,7 +210,7 @@ export function ShadowRenderer({ data, themeSlug }: Props) {
               renderingRef.current = false;
               setRetryCount((c) => c + 1);
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 border border-foreground/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground-dim transition-colors hover:bg-foreground/5"
           >
             <ArrowsClockwise size={14} />
             重试
@@ -223,14 +223,14 @@ export function ShadowRenderer({ data, themeSlug }: Props) {
 
       {/* 切换主题时的加载覆盖层 —— 绝对定位覆盖在旧 iframe 上 */}
       {showLoadingOverlay && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70">
           <div className="flex flex-col items-center gap-2">
             <Spinner
               size={28}
               weight="light"
-              className="animate-spin text-slate-400"
+              className="animate-spin text-foreground-muted"
             />
-            <span className="text-xs text-slate-400">切换中...</span>
+            <span className="text-xs text-foreground-muted">切换中...</span>
           </div>
         </div>
       )}

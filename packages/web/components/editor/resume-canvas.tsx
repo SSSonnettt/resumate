@@ -97,22 +97,22 @@ export const ResumeCanvas = memo(function ResumeCanvas({ visibleSections, contai
             transformOrigin: "top left",
           }}
         >
-          {/* Double-Bezel 外壳 */}
+          {/* Industrial 结构边框 · 外壳 */}
           <div
-            className="a4-page mx-auto rounded-[1.75rem] border border-white/[0.04] bg-white/[0.005] p-[3px] shadow-[0_16px_56px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.02)]"
+            className="a4-page mx-auto border-2 border-foreground/10 bg-card p-[3px]"
             style={{ width: A4_PX.width, contain: "layout style" }}
           >
-            {/* Double-Bezel 内核 */}
+            {/* Industrial 结构边框 · 内核 · A4 白纸 */}
             <div
-              className="rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-white p-10 shadow-sm"
+              className="border border-foreground/10 bg-background p-10"
               style={{ minHeight: A4_PX.height - 4 }}
             >
               {/* 空状态：渐现动画 */}
               <div className="flex h-full flex-col items-center justify-center pt-20 animate-reveal-fade-up">
-                {/* 呼吸辉光占位 */}
-                <div className="mb-6 flex size-16 items-center justify-center rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.04]">
+                {/* 工业文件图标占位 */}
+                <div className="mb-6 flex size-16 items-center justify-center border border-foreground/10 bg-foreground/5">
                   <svg
-                    className="size-6 text-slate-300/40 animate-glow-breathe"
+                    className="size-6 text-foreground-muted/30 animate-pulse-hard"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -124,12 +124,12 @@ export const ResumeCanvas = memo(function ResumeCanvas({ visibleSections, contai
                     <path d="M9 15h6" />
                   </svg>
                 </div>
-                <p className="text-sm font-medium text-slate-400 tracking-tight">
+                <p className="text-sm font-medium text-foreground-dim/60 tracking-tight">
                   {!hasPassedGeneration
                     ? "从左侧添加内容开始编辑简历"
                     : "简历数据为空，请返回上一步重新生成"}
                 </p>
-                <p className="mt-2 text-xs text-slate-300/50">
+                <p className="mt-2 text-xs text-foreground-muted/30">
                   完成 AI 生成后即可在此编辑
                 </p>
               </div>
@@ -161,14 +161,14 @@ export const ResumeCanvas = memo(function ResumeCanvas({ visibleSections, contai
           transformOrigin: "top left",
         }}
       >
-        {/* Double-Bezel 外壳 · 深影 */}
+        {/* Industrial 结构边框 · 外壳 */}
         <div
-          className="a4-page mx-auto rounded-[1.75rem] border border-white/[0.04] bg-white/[0.005] p-[3px] shadow-[0_16px_56px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.02)]"
+          className="a4-page mx-auto border-2 border-foreground/10 bg-card p-[3px]"
           style={{ width: A4_PX.width }}
         >
-          {/* Double-Bezel 内核 · A4白纸 */}
+          {/* Industrial 结构边框 · 内核 · A4 白纸 */}
           <div
-            className="rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-white p-10 shadow-sm"
+            className="border border-foreground/10 bg-background p-10"
             style={{ minHeight: A4_PX.height - 4 }}
           >
             <ShadowRenderer

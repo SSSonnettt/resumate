@@ -18,16 +18,10 @@ export function ChatStep() {
         />
       </div>
 
-      {/* 右侧：信息面板 — Double-Bezel */}
+      {/* 右侧：信息面板 — Industrial 结构边框 */}
       <aside className="w-[300px] shrink-0">
-        <div className="h-full rounded-[2rem] border border-white/[0.06] bg-white/[0.02] p-1.5">
-          <div
-            className="h-full rounded-[calc(2rem-0.375rem)] border border-white/[0.04]
-                        bg-white/[0.015]
-                        shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)]"
-          >
-            <InfoChecklist />
-          </div>
+        <div className="h-full border-2 border-foreground/10 bg-card p-2">
+          <InfoChecklist />
         </div>
       </aside>
     </div>

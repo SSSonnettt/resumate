@@ -211,7 +211,7 @@ export function LogStreamView({
     <div ref={containerRef} className="flex h-full flex-col gap-3 overflow-y-auto px-3 py-4">
       {/* 空状态 */}
       {!hasAnyContent && isStreaming && (
-        <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.015] p-4 text-sm text-foreground-dim">
+        <div className="flex items-center gap-2 border border-[hsl(var(--divider-strong))] bg-card p-4 text-sm text-foreground-dim">
           <Spinner size={14} weight="light" className="animate-spin" />
           AI Agent 启动中...
         </div>
@@ -239,7 +239,7 @@ export function LogStreamView({
 
       {/* plan 级别错误横幅 */}
       {planError && (
-        <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/[0.04] p-4">
+        <div className="flex items-start gap-2 border border-destructive/20 bg-destructive/[0.04] p-4">
           <WarningCircle size={16} weight="light" className="mt-0.5 shrink-0 text-destructive" />
           <div>
             <p className="text-sm font-medium text-destructive">生成失败</p>
@@ -276,16 +276,16 @@ function StageCardNode({
   return (
     <div
       id={`stage-${stage.stepId}`}
-      className={`rounded-xl border transition-colors ${
+      className={`border transition-colors ${
         stage.status === "running"
           ? "border-primary/25 bg-primary/[0.04]"
           : stage.status === "done"
-            ? "border-white/[0.06] bg-white/[0.015]"
+            ? "border-[hsl(var(--divider-strong))] bg-card"
             : stage.status === "error"
               ? "border-destructive/20 bg-destructive/[0.04]"
               : stage.status === "skipped"
-                ? "border-white/[0.04] bg-white/[0.01]"
-                : "border-white/[0.04] bg-white/[0.01]"
+                ? "border-[hsl(var(--divider))] bg-card"
+                : "border-[hsl(var(--divider))] bg-card"
       }`}
     >
       {/* 阶段头部 — 可点击切换展开/收起 */}
@@ -356,13 +356,13 @@ function StageCardNode({
 
       {/* 卡片内容：仅展开时显示 */}
       {hasContent && panelExpanded && (
-        <div className="border-t border-white/[0.06] px-4 py-3">
+        <div className="border-t border-[hsl(var(--divider-strong))] px-4 py-3">
           {/* 展开/折叠 reasoning 按钮 */}
           {stage.reasoning && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleReasoning(); }}
-              className="mb-3 flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs text-foreground-dim transition-colors hover:bg-white/[0.04] hover:text-foreground"
+              className="mb-3 flex items-center gap-1 px-1.5 py-0.5 text-xs text-foreground-dim transition-colors hover:bg-foreground/5 hover:text-foreground"
             >
               <Brain size={12} weight="light" />
               {reasoningExpanded ? "收起思考" : "展开思考"}
@@ -371,7 +371,7 @@ function StageCardNode({
           )}
           {/* 思考过程 — 可折叠 */}
           {stage.reasoning && reasoningExpanded && (
-            <div className="mb-3 rounded-xl border border-primary/10 bg-primary/[0.03] p-3">
+            <div className="mb-3 border border-primary/10 bg-primary/[0.03] p-3">
               <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-primary/80">
                 <Brain size={12} weight="light" />
                 思考过程
@@ -388,13 +388,13 @@ function StageCardNode({
               {stage.toolCalls.map((tc, i) => (
                 <div
                   key={i}
-                  className="rounded-xl border border-secondary/15 bg-secondary/[0.04] px-3 py-2"
+                  className="border border-foreground/10 bg-foreground/[0.04] px-3 py-2"
                 >
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-secondary/80">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-foreground-muted">
                     <Wrench size={10} weight="light" />
                     调用工具: {tc.tool}
                   </div>
-                  <pre className="mt-1 max-h-24 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-secondary/60 opacity-80">
+                  <pre className="mt-1 max-h-24 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-foreground-muted/60 opacity-80">
                     {JSON.stringify(tc.args, null, 2)}
                   </pre>
                 </div>

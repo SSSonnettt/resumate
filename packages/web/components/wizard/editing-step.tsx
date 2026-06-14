@@ -180,19 +180,18 @@ export function EditingStep() {
 
       <ResizableHandle withHandle />
 
-      {/* 右侧：样式/内容面板 · Double-Bezel 玻璃 */}
+      {/* 右侧：样式/内容面板 · Industrial 结构边框 */}
       <ResizablePanel defaultSize={25} minSize={18}>
         <aside className="h-full w-full flex flex-col gap-3 overflow-y-auto p-3">
-          <div className="flex flex-col gap-3 rounded-[1.75rem] border border-white/[0.05] bg-white/[0.015] p-[3px] shadow-[0_12px_48px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]">
-            <div className="flex flex-col gap-3 rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-[hsl(240,10%,3%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          <div className="flex flex-col gap-3 border-2 border-foreground/10 bg-card p-3">
           {/* ---- 导出按钮 ---- */}
           <div className="space-y-2">
             <Button
               onClick={downloadPDF}
               disabled={exporting}
-              className="group w-full h-10 rounded-full bg-primary shadow-[0_0_20px_var(--primary-glow)]"
+              className="group w-full h-10 bg-primary"
             >
-              <span className="flex items-center justify-center rounded-full bg-white/20 p-1 transition-all duration-300 group-hover:scale-105" style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
+              <span className="flex items-center justify-center bg-foreground/10 p-1 transition-all duration-300 group-hover:scale-105" style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
                 <DownloadSimple size={14} weight="light" />
               </span>
               <span className="ml-2 text-sm font-medium">
@@ -202,7 +201,7 @@ export function EditingStep() {
             <Button
               variant="outline"
               onClick={printPDF}
-              className="w-full rounded-full"
+              className="w-full"
             >
               <Printer size={15} weight="light" className="mr-1.5" />
               浏览器打印
@@ -225,7 +224,7 @@ export function EditingStep() {
             <select
               value={resume.themeSlug}
               onChange={(e) => useResumeStore.getState().setThemeSlug(e.target.value)}
-              className="h-9 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 text-xs outline-none transition-colors focus:border-primary/25"
+              className="h-9 w-full border border-[hsl(var(--border))] bg-card px-2.5 text-xs outline-none transition-colors focus:border-accent"
             >
               {THEMES.map((theme) => (
                 <option key={theme.slug} value={theme.slug}>
@@ -250,10 +249,10 @@ export function EditingStep() {
                   {/* 折叠标题栏 */}
                   <button
                     onClick={() => toggleSection(section.key)}
-                    className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-all active:scale-[0.98] ${
+                    className={`flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs font-medium transition-all active:scale-[0.98] ${
                       section.key === editingSection
                         ? "bg-primary/10 text-primary"
-                        : "text-foreground-dim hover:bg-white/[0.04]"
+                        : "text-foreground-dim hover:bg-foreground/5"
                     }`}
                   >
                     <span className="shrink-0">
@@ -272,10 +271,10 @@ export function EditingStep() {
                           toggleSectionVisible(section.key, e as unknown as React.MouseEvent);
                         }
                       }}
-                      className={`ml-auto inline-flex shrink-0 items-center rounded-full p-0.5 transition-colors ${
+                      className={`ml-auto inline-flex shrink-0 items-center p-0.5 transition-colors ${
                         visibleSections[section.key]
                           ? "text-primary hover:bg-primary/10"
-                          : "text-foreground-muted/30 hover:bg-white/[0.04] hover:text-foreground-muted/60"
+                          : "text-foreground-muted/30 hover:bg-foreground/5 hover:text-foreground-muted/60"
                       }`}
                       title={visibleSections[section.key] ? "在简历中显示" : "在简历中隐藏"}
                     >
@@ -304,7 +303,6 @@ export function EditingStep() {
                 </div>
               );
             })}
-          </div>
           </div>
           </div>
         </aside>

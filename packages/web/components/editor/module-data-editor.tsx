@@ -58,7 +58,7 @@ export function SectionDataEditor({ sectionKey, data, onChange }: Props) {
   const label = sectionLabels[sectionKey] || sectionKey;
 
   const titleBar = (
-    <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-2">
+    <div className="flex items-center justify-between border-b border-[hsl(var(--divider-strong))] px-3 py-2">
       <div>
         <p className="text-[10px] font-medium tracking-[0.15em] text-foreground-dim uppercase">{sectionKey}</p>
         <h3 className="text-sm font-semibold">{label}</h3>
@@ -93,11 +93,11 @@ export function SectionDataEditor({ sectionKey, data, onChange }: Props) {
   );
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.015]">
+    <div className="border border-[hsl(var(--border))] bg-card">
       {titleBar}
 
       {showAIEdit && (
-        <div className="border-b border-white/[0.06] px-3 py-2">
+        <div className="border-b border-[hsl(var(--divider-strong))] px-3 py-2">
           <AIEditInput
             sectionKey={sectionKey as "basics" | "work" | "education" | "skills" | "projects"}
             sectionData={data}
@@ -118,7 +118,7 @@ export function SectionDataEditor({ sectionKey, data, onChange }: Props) {
             onChange={(e) => setJsonDraft(e.target.value)}
             spellCheck={false}
             rows={6}
-            className="w-full resize-y rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 font-mono text-xs leading-5 outline-none transition-colors focus:border-primary/25"
+            className="w-full resize-y border border-[hsl(var(--border))] bg-card px-3 py-2 font-mono text-xs leading-5 outline-none transition-colors focus:border-accent"
           />
           {jsonError && (
             <p className="mt-2 text-xs leading-5 text-destructive">{jsonError}</p>
@@ -132,7 +132,7 @@ export function SectionDataEditor({ sectionKey, data, onChange }: Props) {
       )}
 
       {showJSON && FormComponent && (
-        <div className="border-t border-white/[0.06] p-3">
+        <div className="border-t border-[hsl(var(--divider-strong))] p-3">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-medium text-foreground-dim">
               高级：编辑 JSON
@@ -146,7 +146,7 @@ export function SectionDataEditor({ sectionKey, data, onChange }: Props) {
             onChange={(e) => setJsonDraft(e.target.value)}
             spellCheck={false}
             rows={8}
-            className="w-full resize-y rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 font-mono text-xs leading-5 outline-none transition-colors focus:border-primary/25"
+            className="w-full resize-y border border-[hsl(var(--border))] bg-card px-3 py-2 font-mono text-xs leading-5 outline-none transition-colors focus:border-accent"
           />
           {jsonError && (
             <p className="mt-2 text-xs leading-5 text-destructive">{jsonError}</p>

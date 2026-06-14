@@ -1,0 +1,84 @@
+/* ======== Industrial Brutalist 动效关键帧 ======== */
+
+/* ---- 保留：基本入场动画 ---- */
+@keyframes reveal-fade-up {
+  0% {
+    transform: translateY(1rem);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes reveal-scale {
+  0% {
+    transform: scale(0.97);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes reveal-slide-right {
+  0% { transform: translateX(-0.5rem); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes reveal-slide-left {
+  0% { transform: translateX(0.5rem); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes reveal-fade-down {
+  0% { transform: translateY(-0.5rem); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* ---- 工业动画新增 ---- */
+
+/* 光标闪烁：打字机光标 */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* 逐字揭示：clip-path 从左到右展开 */
+@keyframes char-reveal {
+  0% { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+
+/* 删除线擦入：从左向右划过 */
+@keyframes strike-through {
+  0% { transform: scaleX(0); transform-origin: left; }
+  100% { transform: scaleX(1); transform-origin: left; }
+}
+
+/* 噪点纹理微移 */
+@keyframes noise-shift {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-1px, 0); }
+  50% { transform: translate(0, -1px); }
+  75% { transform: translate(1px, 0); }
+}
+
+/* 硬脉冲：工业用 */
+@keyframes pulse-hard {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ======== 无障碍：减少动画偏好 ======== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

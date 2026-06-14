@@ -247,7 +247,7 @@ export function GeneratingStep() {
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-white/[0.06] bg-white/[0.02] px-8 py-4 backdrop-blur-2xl">
+        <div className="shrink-0 border-t border-[hsl(var(--divider-strong))] bg-[hsl(var(--card))] px-8 py-4">
           <div className="flex items-center justify-center gap-3">
             <Button
               onClick={() => {
@@ -270,9 +270,9 @@ export function GeneratingStep() {
           </p>
         </div>
 
-        <div className="shrink-0 border-t border-white/[0.06] bg-white/[0.02] px-8 py-5 backdrop-blur-2xl">
+        <div className="shrink-0 border-t border-[hsl(var(--divider-strong))] bg-[hsl(var(--card))] px-8 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/[0.06]">
+            <div className="flex h-10 w-10 items-center justify-center bg-primary/[0.06]">
               <CheckCircle size={22} weight="light" className="text-primary" />
             </div>
             <div>
@@ -291,7 +291,7 @@ export function GeneratingStep() {
   if (fatalError) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-6 px-8">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/[0.06]">
+        <div className="flex h-16 w-16 items-center justify-center bg-destructive/[0.06]">
           <Warning size={32} weight="light" className="text-destructive" />
         </div>
         <div className="max-w-md text-center">
@@ -314,7 +314,7 @@ export function GeneratingStep() {
             重新生成
           </Button>
         </div>
-        <div className="max-h-64 w-full max-w-xl overflow-hidden rounded-xl border border-white/[0.06]">
+        <div className="max-h-64 w-full max-w-xl overflow-hidden border border-[hsl(var(--divider-strong))]">
           <ScrollArea className="h-full max-h-64">
             <LogStreamView harnessEvents={harnessEvents} isStreaming={pipelineRunning} />
           </ScrollArea>
@@ -337,11 +337,11 @@ export function GeneratingStep() {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-white/[0.04] bg-white/[0.015] px-8 py-6 backdrop-blur-2xl">
+      <div className="shrink-0 border-t border-[hsl(var(--divider))] bg-card px-8 py-6">
         <div className="flex items-center gap-3">
           {!pipelineRunning ? (
             <>
-              <div className="flex size-10 items-center justify-center rounded-xl bg-white/[0.03] ring-1 ring-white/[0.03]">
+              <div className="flex size-10 items-center justify-center bg-foreground/5 ring-1 ring-[hsl(var(--divider))]">
                 <Circle size={18} weight="light" className="text-foreground-muted/40" />
               </div>
               <div>
@@ -353,7 +353,7 @@ export function GeneratingStep() {
             </>
           ) : hasResumeDataRef.current ? (
             <>
-              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/[0.06] ring-1 ring-primary/10">
+              <div className="flex size-10 items-center justify-center bg-primary/[0.06] ring-1 ring-primary/10">
                 <CheckCircle size={18} weight="light" className="text-primary" />
               </div>
               <div>
@@ -387,9 +387,9 @@ export function GeneratingStep() {
             </>
           )}
         </div>
-        <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.04]">
+        <div className="mt-4 h-1.5 w-full overflow-hidden bg-[hsl(var(--muted))]">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary shadow-[0_0_12px_var(--primary-glow-strong)] transition-all"
+            className="h-full bg-accent transition-all"
             style={{
               width: !pipelineRunning
                 ? "0%"

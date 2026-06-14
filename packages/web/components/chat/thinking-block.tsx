@@ -13,7 +13,7 @@ export function ThinkingBlock({ content }: ThinkingBlockProps) {
   if (!content) return null;
 
   return (
-    <div className="mb-2 rounded-lg border border-primary/10 bg-primary/[0.03]">
+    <div className="mb-2 border border-primary/10 bg-primary/[0.03]">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-primary/80 transition-colors hover:bg-primary/[0.06]"

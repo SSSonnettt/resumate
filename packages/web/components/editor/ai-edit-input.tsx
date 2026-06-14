@@ -75,14 +75,14 @@ export function AIEditInput({ sectionKey, sectionData, onResult, jdContext }: Pr
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
           placeholder='例如：让这段更技术化、加一个关于 K8s 的项目...'
-          className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs outline-none transition-colors focus:border-primary/25"
+          className="flex-1 border border-[hsl(var(--border))] bg-card px-3 py-1.5 text-xs outline-none transition-colors focus:border-accent"
           onKeyDown={(e) => e.key === "Enter" && submit()}
           disabled={loading}
         />
         <button
           onClick={submit}
           disabled={loading || !instruction.trim()}
-          className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary/80 disabled:opacity-50 shrink-0"
+          className="inline-flex items-center gap-1 bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50 shrink-0"
         >
           {loading ? (
             <Spinner size={12} weight="light" className="animate-spin" />

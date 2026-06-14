@@ -7,8 +7,8 @@ export function StylePanel() {
   const setThemeSlug = useResumeStore((s) => s.setThemeSlug);
 
   return (
-    <section className="overflow-hidden rounded-[1.75rem] border border-white/[0.06] bg-white/[0.02]">
-      <div className="border-b border-white/[0.06] px-4 py-3">
+    <section className="overflow-hidden border border-[hsl(var(--border))] bg-card">
+      <div className="border-b border-[hsl(var(--divider-strong))] px-4 py-3">
         <h3 className="text-sm font-semibold">主题</h3>
         <p className="mt-1 text-xs text-foreground-dim">
           从 55 个社区主题中选择

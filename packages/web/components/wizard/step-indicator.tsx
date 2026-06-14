@@ -3,9 +3,9 @@ import { useWizardStore, type Step } from "@/lib/stores/wizard-store";
 import { Check } from "@phosphor-icons/react";
 
 const STEPS: { key: Step; label: string }[] = [
-  { key: "chat", label: "聊天收集" },
-  { key: "generating", label: "AI 生成" },
-  { key: "editing", label: "可视化编辑" },
+  { key: "chat", label: "/// STEP 01: CHAT COLLECTION" },
+  { key: "generating", label: "/// STEP 02: GENERATE" },
+  { key: "editing", label: "/// STEP 03: EDIT & EXPORT" },
 ];
 
 export function StepIndicator() {
@@ -31,22 +31,22 @@ export function StepIndicator() {
             <button
               onClick={() => isClickable && setStep(s.key)}
               disabled={!isClickable}
-              className={`group relative flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              className={`group relative flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-widest transition-colors duration-150 ${
                 isCurrent
-                  ? "bg-primary/[0.08] text-primary shadow-[0_0_14px_var(--primary-glow)]"
+                  ? "text-foreground"
                   : isCompleted
-                    ? "cursor-pointer text-foreground-dim/70 hover:bg-white/[0.04] hover:text-foreground-dim"
-                    : "cursor-default text-foreground-muted/40"
+                    ? "cursor-pointer text-foreground-muted hover:text-foreground/70"
+                    : "cursor-default text-foreground-muted/30"
               }`}
             >
-              {/* 步骤序号/勾号 · 迷你圆 */}
+              {/* 步骤序号/勾号 · 方形指示器 */}
               <span
-                className={`flex size-4 items-center justify-center rounded-full text-[9px] transition-all duration-500 ${
+                className={`flex size-4 items-center justify-center border text-[9px] font-bold transition-colors duration-150 ${
                   isCurrent
-                    ? "bg-primary text-primary-foreground shadow-[0_0_8px_var(--primary-glow-strong)]"
+                    ? "bg-foreground text-background border-foreground"
                     : isCompleted
-                      ? "bg-primary/15 text-primary/80"
-                      : "bg-white/[0.04] text-foreground-muted/30"
+                      ? "border-accent text-accent"
+                      : "border-foreground/15 text-foreground-muted/30"
                 }`}
               >
                 {isCompleted && !isCurrent ? (
@@ -55,21 +55,21 @@ export function StepIndicator() {
                   index + 1
                 )}
               </span>
-              <span className="whitespace-nowrap font-medium tracking-wide hidden sm:inline">
+              <span className="whitespace-nowrap hidden sm:inline">
                 {s.label}
               </span>
             </button>
 
-            {/* 连接线 · 渐变微光 */}
+            {/* 连接线 · 实线 */}
             {!isLast && (
               <div className="flex items-center px-0.5">
                 <div
-                  className={`h-px w-4 rounded-full transition-all duration-700 ${
+                  className={`h-px w-6 transition-colors duration-300 ${
                     isCompleted && completedSteps.includes(STEPS[index + 1].key)
-                      ? "bg-gradient-to-r from-primary/30 to-primary/20"
+                      ? "bg-foreground/20"
                       : isCurrent
-                        ? "bg-gradient-to-r from-primary/20 to-white/[0.04]"
-                        : "bg-white/[0.04]"
+                        ? "bg-accent animate-pulse-hard"
+                        : "bg-foreground/10"
                   }`}
                 />
               </div>

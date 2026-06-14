@@ -39,7 +39,7 @@ export function ThemeGallery({ currentSlug, onSelect }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索主题..."
-          className="h-9 w-full rounded-xl border border-white/[0.06] bg-white/[0.02] pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-foreground-dim/40 focus:border-primary/25"
+          className="h-9 w-full border border-[hsl(var(--border))] bg-card pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-foreground-dim/40 focus:border-accent"
         />
       </div>
 
@@ -47,7 +47,7 @@ export function ThemeGallery({ currentSlug, onSelect }: Props) {
       <select
         value={currentSlug}
         onChange={(e) => onSelect(e.target.value)}
-        className="h-9 w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 text-sm outline-none transition-colors focus:border-primary/25"
+        className="h-9 w-full border border-[hsl(var(--border))] bg-card px-3 text-sm outline-none transition-colors focus:border-accent"
       >
         {filteredThemes.map((theme) => (
           <option key={theme.slug} value={theme.slug}>
@@ -62,7 +62,7 @@ export function ThemeGallery({ currentSlug, onSelect }: Props) {
           href={`https://registry.jsonresume.org/${selectedTheme.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs text-foreground-dim transition-colors hover:border-white/[0.12] hover:bg-white/[0.04] hover:text-foreground"
+          className="inline-flex items-center gap-1.5 border border-[hsl(var(--border))] bg-card px-3 py-1.5 text-xs text-foreground-dim transition-colors hover:border-[hsl(var(--border-hover))] hover:bg-foreground/5 hover:text-foreground"
         >
           <ArrowSquareOut size={14} weight="light" />
           预览「{selectedTheme.nameZh}」

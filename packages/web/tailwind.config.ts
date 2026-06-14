@@ -1,7 +1,6 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -14,7 +13,6 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-          glass: "hsl(var(--primary-glass))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -44,20 +42,21 @@ export default {
         "foreground-muted": "hsl(var(--foreground-muted))",
       },
       borderRadius: {
-        xs: "var(--radius-xs)",
-        sm: "var(--radius-sm)",
-        DEFAULT: "var(--radius)",
-        lg: "var(--radius-lg)",
-        xl: "var(--radius-xl)",
-        "2xl": "var(--radius-2xl)",
-        "3xl": "var(--radius-shell)",
-        full: "9999px",
+        xs: "0",
+        sm: "0",
+        DEFAULT: "0",
+        lg: "0",
+        xl: "0",
+        "2xl": "0",
+        "3xl": "0",
+        full: "0",
       },
       fontWeight: {
         normal: "var(--font-weight-normal)",
         medium: "var(--font-weight-medium)",
         semibold: "var(--font-weight-semibold)",
         bold: "var(--font-weight-bold)",
+        black: "var(--font-weight-black)",
       },
       letterSpacing: {
         tighter: "var(--tracking-tighter)",
@@ -74,97 +73,51 @@ export default {
         modal: "var(--z-modal)",
         toast: "var(--z-toast)",
       },
-      backdropBlur: {
-        glass: "var(--glass-blur)",
-        heavy: "var(--glass-blur-heavy)",
+      fontFamily: {
+        mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
+        display: ["var(--font-display)", "Inter", "system-ui", "sans-serif"],
       },
-      /* ======== Ethereal 动效关键帧 ======== */
+      /* ======== Industrial Brutalist 动效关键帧 ======== */
       keyframes: {
-        /* 渐现上浮 · 模拟质量惯性 */
-        "reveal-fade-up": {
-          "0%": {
-            transform: "translateY(2rem)",
-            opacity: "0",
-            filter: "blur(4px)",
-          },
-          "100%": {
-            transform: "translateY(0)",
-            opacity: "1",
-            filter: "blur(0)",
-          },
+        /* 光标闪烁 */
+        "blink-cursor": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0" },
         },
-        /* 渐现缩小 · 弹窗入场 */
-        "reveal-scale": {
-          "0%": {
-            transform: "scale(0.94)",
-            opacity: "0",
-            filter: "blur(2px)",
-          },
-          "100%": {
-            transform: "scale(1)",
-            opacity: "1",
-            filter: "blur(0)",
-          },
+        /* 字符逐字揭示 */
+        "char-reveal": {
+          "0%": { opacity: "0", transform: "translateY(2px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
-        /* 水平滑入 · 侧边栏 */
-        "reveal-slide-right": {
-          "0%": { transform: "translateX(-0.75rem)", opacity: "0" },
-          "100%": { transform: "translateX(0)", opacity: "1" },
+        /* 删除线扫描 */
+        "strike-through": {
+          "0%": { width: "0%" },
+          "100%": { width: "100%" },
         },
-        "reveal-slide-left": {
-          "0%": { transform: "translateX(0.75rem)", opacity: "0" },
-          "100%": { transform: "translateX(0)", opacity: "1" },
+        /* 扫描线揭示 */
+        "scanline-reveal": {
+          "0%": { clipPath: "inset(0 0 100% 0)" },
+          "100%": { clipPath: "inset(0 0 0% 0)" },
         },
-        /* 磁悬浮 · 图标平移 */
-        "magnetic-hover": {
-          "0%": { transform: "translate(0, 0)" },
-          "100%": { transform: "translate(2px, -1px) scale(1.05)" },
+        /* 盖章式按入 */
+        "stamp-down": {
+          "0%": { transform: "scale(1.1)", opacity: "0" },
+          "60%": { transform: "scale(0.97)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "1" },
         },
-        /* 辉光呼吸 */
-        "glow-breathe": {
-          "0%, 100%": { opacity: "0.4" },
-          "50%": { opacity: "0.75" },
+        /* 进度条脉冲 */
+        "pulse-hard": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5" },
         },
-        /* 骨架屏流光 */
-        shimmer: {
-          "0%": { transform: "translateX(-100%)" },
-          "100%": { transform: "translateX(200%)" },
-        },
-        /* 进度条 · 不确定态 */
-        "progress-indeterminate": {
-          "0%": { transform: "translateX(-100%)" },
-          "50%": { transform: "translateX(0%)" },
-          "100%": { transform: "translateX(100%)" },
-        },
-        /* 边框光晕流转 */
-        "border-glow": {
-          "0%, 100%": { borderColor: "hsl(43 74% 55% / 0.1)" },
-          "50%": { borderColor: "hsl(43 74% 55% / 0.22)" },
-        },
-        /* 下落浮现 */
-        "reveal-fade-down": {
-          "0%": { transform: "translateY(-0.75rem)", opacity: "0" },
-          "100%": { transform: "translateY(0)", opacity: "1" },
-        },
-      },
-      /* ======== 自定义缓动曲线 ======== */
-      transitionTimingFunction: {
-        "spring-out": "cubic-bezier(0.32, 0.72, 0, 1)",
-        "spring-in": "cubic-bezier(0.64, 0, 1, 1)",
-        "spring-bounce": "cubic-bezier(0.34, 1.56, 0.64, 1)",
-        "glass-smooth": "cubic-bezier(0.22, 1, 0.36, 1)",
       },
       animation: {
-        "reveal-fade-up": "reveal-fade-up 0.8s cubic-bezier(0.32,0.72,0,1) forwards",
-        "reveal-scale": "reveal-scale 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards",
-        "reveal-slide-right": "reveal-slide-right 0.5s cubic-bezier(0.32,0.72,0,1) forwards",
-        "reveal-slide-left": "reveal-slide-left 0.5s cubic-bezier(0.32,0.72,0,1) forwards",
-        "reveal-fade-down": "reveal-fade-down 0.5s cubic-bezier(0.32,0.72,0,1) forwards",
-        "magnetic-hover": "magnetic-hover 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards",
-        "glow-breathe": "glow-breathe 4s ease-in-out infinite",
-        shimmer: "shimmer 2s infinite",
-        "progress-indeterminate": "progress-indeterminate 2s ease-in-out infinite",
-        "border-glow": "border-glow 3s ease-in-out infinite",
+        "blink-cursor": "blink-cursor 1s step-end infinite",
+        "char-reveal": "char-reveal 0.3s ease-out forwards",
+        "strike-through": "strike-through 0.6s ease-out forwards",
+        "scanline-reveal": "scanline-reveal 0.8s ease-out forwards",
+        "stamp-down": "stamp-down 0.4s ease-out forwards",
+        "pulse-hard": "pulse-hard 2s ease-in-out infinite",
       },
     },
   },

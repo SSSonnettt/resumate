@@ -51,7 +51,7 @@ export function SkillsForm({ data, onChange }: Props) {
         <button
           type="button"
           onClick={addSkill}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/[0.06]"
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-primary transition-colors hover:bg-foreground/5"
         >
           <Plus size={12} weight="light" />
           添加技能
@@ -59,21 +59,21 @@ export function SkillsForm({ data, onChange }: Props) {
       </div>
       <div className="space-y-3">
         {data.map((skill, skillIndex) => (
-          <div key={skillIndex} className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3">
+          <div key={skillIndex} className="border border-foreground/10 bg-card p-3">
             <div className="mb-2 flex items-center gap-2">
               <input
                 type="text"
                 value={skill.name}
                 onChange={(e) => updateSkill(skillIndex, { name: e.target.value })}
                 placeholder="技能分类名（如：前端）"
-                className="flex-1 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-sm font-medium outline-none transition-colors focus:border-primary/25"
+                className="flex-1 border border-foreground/10 bg-card px-2.5 py-1.5 text-sm font-medium outline-none transition-colors focus:border-accent"
               />
               <select
                 value={skill.level ?? ""}
                 onChange={(e) =>
                   updateSkill(skillIndex, { level: e.target.value || undefined })
                 }
-                className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-1.5 text-xs outline-none transition-colors focus:border-primary/25 text-foreground-muted"
+                className="border border-foreground/10 bg-card px-2 py-1.5 text-xs outline-none transition-colors focus:border-accent text-foreground-muted"
               >
                 <option value="">熟练度</option>
                 <option value="Master">Master</option>
@@ -84,7 +84,7 @@ export function SkillsForm({ data, onChange }: Props) {
               <button
                 type="button"
                 onClick={() => removeSkill(skillIndex)}
-                className="rounded-lg p-1 text-foreground-muted/30 transition-colors hover:bg-destructive/[0.06] hover:text-destructive"
+                className="p-1 text-foreground-muted/30 transition-colors hover:bg-destructive/[0.06] hover:text-destructive"
               >
                 <Trash size={14} weight="light" />
               </button>
@@ -93,13 +93,13 @@ export function SkillsForm({ data, onChange }: Props) {
               {(skill.keywords ?? []).map((kw, kwIndex) => (
                 <span
                   key={kwIndex}
-                  className="inline-flex items-center gap-1 rounded-full bg-primary/[0.08] px-2.5 py-1 text-xs font-medium text-primary"
+                  className="inline-flex items-center gap-1 bg-accent/[0.08] px-2.5 py-1 text-xs font-medium text-accent"
                 >
                   {kw}
                   <button
                     type="button"
                     onClick={() => removeKeyword(skillIndex, kwIndex)}
-                    className="ml-0.5 rounded-full p-0.5 hover:bg-primary/[0.15]"
+                    className="ml-0.5 p-0.5 hover:bg-accent/[0.15]"
                   >
                     <X size={10} weight="light" />
                   </button>
@@ -119,12 +119,12 @@ export function SkillsForm({ data, onChange }: Props) {
                     }
                   }}
                   placeholder="添加关键词"
-                  className="w-28 rounded-full border border-dashed border-white/[0.08] bg-white/[0.01] px-2.5 py-1 text-xs outline-none transition-colors focus:border-primary/25"
+                  className="w-28 border border-dashed border-foreground/10 bg-card px-2.5 py-1 text-xs outline-none transition-colors focus:border-accent"
                 />
                 <button
                   type="button"
                   onClick={() => addKeyword(skillIndex)}
-                  className="rounded-lg p-0.5 text-primary transition-colors hover:text-primary/80"
+                  className="p-0.5 text-primary transition-colors hover:text-primary/80"
                 >
                   <Plus size={14} weight="light" />
                 </button>
@@ -133,7 +133,7 @@ export function SkillsForm({ data, onChange }: Props) {
           </div>
         ))}
         {data.length === 0 && (
-          <p className="rounded-xl border border-dashed border-white/[0.06] bg-white/[0.01] px-3 py-6 text-center text-sm text-foreground-muted">
+          <p className="border border-dashed border-foreground/10 bg-card px-3 py-6 text-center text-sm text-foreground-muted">
             暂无技能，点击上方按钮添加。
           </p>
         )}

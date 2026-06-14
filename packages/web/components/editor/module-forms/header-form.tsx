@@ -40,7 +40,7 @@ export function HeaderForm({ data, onChange }: Props) {
           value={data.name}
           onChange={(e) => updateField("name", e.target.value)}
           placeholder="张三"
-          className="w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm outline-none transition-colors focus:border-primary/25"
+          className="w-full border border-foreground/10 bg-card px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
         />
         {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name}</p>}
       </div>
@@ -53,7 +53,7 @@ export function HeaderForm({ data, onChange }: Props) {
           value={data.label ?? ""}
           onChange={(e) => updateField("label", e.target.value)}
           placeholder="前端工程师"
-          className="w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm outline-none transition-colors focus:border-primary/25"
+          className="w-full border border-foreground/10 bg-card px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
         />
       </div>
 
@@ -65,7 +65,7 @@ export function HeaderForm({ data, onChange }: Props) {
           value={data.email ?? ""}
           onChange={(e) => updateField("email", e.target.value)}
           placeholder="zhangsan@example.com"
-          className="w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm outline-none transition-colors focus:border-primary/25"
+          className="w-full border border-foreground/10 bg-card px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
         />
       </div>
 
@@ -77,7 +77,7 @@ export function HeaderForm({ data, onChange }: Props) {
           value={data.phone ?? ""}
           onChange={(e) => updateField("phone", e.target.value)}
           placeholder="13800000000"
-          className="w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm outline-none transition-colors focus:border-primary/25"
+          className="w-full border border-foreground/10 bg-card px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
         />
       </div>
 
@@ -89,7 +89,7 @@ export function HeaderForm({ data, onChange }: Props) {
           value={data.url ?? ""}
           onChange={(e) => updateField("url", e.target.value)}
           placeholder="https://github.com/zhangsan"
-          className="w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm outline-none transition-colors focus:border-primary/25"
+          className="w-full border border-foreground/10 bg-card px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
         />
       </div>
 
@@ -101,7 +101,7 @@ export function HeaderForm({ data, onChange }: Props) {
           onChange={(e) => updateField("summary", e.target.value)}
           placeholder="5年经验的资深前端工程师..."
           rows={3}
-          className="w-full resize-y rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm outline-none transition-colors focus:border-primary/25"
+          className="w-full resize-y border border-foreground/10 bg-card px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
         />
       </div>
 
@@ -112,7 +112,7 @@ export function HeaderForm({ data, onChange }: Props) {
           <button
             type="button"
             onClick={addProfile}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/[0.06]"
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-primary transition-colors hover:bg-foreground/5"
           >
             <Plus size={12} weight="light" />
             添加
@@ -126,19 +126,19 @@ export function HeaderForm({ data, onChange }: Props) {
                 value={profile.network}
                 onChange={(e) => updateProfile(index, { network: e.target.value })}
                 placeholder="GitHub"
-                className="w-20 shrink-0 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 py-2 text-sm outline-none transition-colors focus:border-primary/25"
+                className="w-20 shrink-0 border border-foreground/10 bg-card px-2 py-2 text-sm outline-none transition-colors focus:border-accent"
               />
               <input
                 type="text"
                 value={profile.username}
                 onChange={(e) => updateProfile(index, { username: e.target.value })}
                 placeholder="用户名"
-                className="min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm outline-none transition-colors focus:border-primary/25"
+                className="min-w-0 flex-1 border border-foreground/10 bg-card px-3 py-2 text-sm outline-none transition-colors focus:border-accent"
               />
               <button
                 type="button"
                 onClick={() => removeProfile(index)}
-                className="shrink-0 rounded-lg p-1.5 text-foreground-muted/30 transition-colors hover:bg-destructive/[0.06] hover:text-destructive"
+                className="shrink-0 p-1.5 text-foreground-muted/30 transition-colors hover:bg-destructive/[0.06] hover:text-destructive"
               >
                 <Trash size={14} weight="light" />
               </button>

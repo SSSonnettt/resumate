@@ -115,16 +115,15 @@ export function ApiKeyDialog() {
     (!isCustom || (baseURL.trim() && model.trim()));
 
   const inputClasses =
-    "w-full rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground-muted/30 transition-all duration-300 outline-none focus:border-primary/30 focus:bg-white/[0.03] focus:shadow-[0_0_0_3px_var(--primary-glow)]";
+    "w-full border border-[hsl(var(--border))] bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground-muted/30 transition-all duration-300 outline-none focus:border-accent";
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-reveal-fade-up">
-      {/* Double-Bezel 玻璃模态框 */}
-      <div className="w-full max-w-[420px] rounded-3xl border border-white/[0.06] bg-white/[0.005] p-[3px] shadow-[0_0_80px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.02)]">
-        <div className="space-y-5 rounded-[calc(1.5rem-3px)] border border-white/[0.06] bg-card p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 p-4 animate-reveal-fade-up">
+      {/* Industrial 结构边框模态框 */}
+      <div className="w-full max-w-[420px] border-2 border-foreground/10 bg-card p-6 space-y-5">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary/[0.08] ring-1 ring-primary/10">
+          <span className="flex size-10 items-center justify-center bg-primary/[0.08] ring-1 ring-primary/10">
             <Key size={20} weight="light" className="text-primary" />
           </span>
           <div>
@@ -148,10 +147,10 @@ export function ApiKeyDialog() {
                 key={key}
                 type="button"
                 onClick={() => handleProviderChange(key)}
-                className={`rounded-xl border px-3 py-2 text-xs font-medium transition-all duration-300 ${
+                className={`border px-3 py-2 text-xs font-medium transition-all duration-300 ${
                   provider === key
-                    ? "border-primary/30 bg-primary/[0.06] text-primary shadow-[0_0_12px_var(--primary-glow)]"
-                    : "border-white/[0.04] bg-transparent text-foreground-dim hover:border-white/[0.08] hover:bg-white/[0.02]"
+                    ? "border-accent bg-accent/[0.06] text-accent"
+                    : "border-[hsl(var(--divider))] bg-transparent text-foreground-dim hover:border-[hsl(var(--divider-strong))] hover:bg-card"
                 }`}
               >
                 {PRESETS[key].label}
@@ -216,10 +215,10 @@ export function ApiKeyDialog() {
 
         {/* 模型信息 */}
         {!isCustom && model && (
-          <div className="rounded-xl border border-white/[0.04] bg-white/[0.015] px-3.5 py-2.5">
+          <div className="border border-[hsl(var(--divider))] bg-card px-3.5 py-2.5">
             <p className="text-xs text-foreground-muted">
               <span className="text-foreground-dim">当前模型</span>{" "}
-              <code className="rounded-md bg-white/[0.04] px-1.5 py-0.5 font-medium text-foreground">
+              <code className="bg-[hsl(var(--muted))] px-1.5 py-0.5 font-medium text-foreground">
                 {model}
               </code>
             </p>
@@ -230,7 +229,7 @@ export function ApiKeyDialog() {
         <button
           onClick={save}
           disabled={!apiKey.trim()}
-          className="group flex w-full items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_0_24px_var(--primary-glow),0_2px_8px_rgba(0,0,0,0.3)] transition-all duration-300 active:scale-[0.97] active:shadow-[0_0_12px_var(--primary-glow)] disabled:opacity-40 disabled:shadow-none"
+          className="group flex w-full items-center justify-center gap-2 bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-all duration-300 active:scale-[0.97] disabled:opacity-40"
         >
           开始使用
           <ArrowRight
@@ -239,7 +238,6 @@ export function ApiKeyDialog() {
             className="transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-enabled:group-hover:translate-x-0.5"
           />
         </button>
-        </div>
       </div>
     </div>
   );

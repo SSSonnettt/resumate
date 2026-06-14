@@ -103,13 +103,13 @@ export function PreviewStep() {
           className="mx-auto"
           style={{ width: A4_PX.width }}
         >
-          {/* Double-Bezel A4 页面 */}
+          {/* A4 页面 · Industrial 结构边框 */}
           <div
-            className="a4-page mx-auto rounded-[1.75rem] border border-white/[0.04] bg-white/[0.005] p-[3px] shadow-[0_16px_56px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.02)]"
+            className="a4-page mx-auto border-2 border-foreground/10 bg-card p-[3px]"
             style={{ width: A4_PX.width }}
           >
             <div
-              className="rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-white p-10 shadow-sm"
+              className="border border-foreground/10 bg-background p-10"
               style={{ minHeight: A4_PX.height - 4 }}
             >
               {hasResumeData ? (
@@ -118,7 +118,7 @@ export function PreviewStep() {
                   themeSlug={themeSlug}
                 />
               ) : (
-                <p className="pt-20 text-center text-slate-300">
+                <p className="pt-20 text-center text-foreground-muted">
                   简历数据为空，请返回上一步重新生成
                 </p>
               )}
@@ -127,10 +127,9 @@ export function PreviewStep() {
         </div>
       </div>
 
-      {/* 右侧操作面板 · Double-Bezel 玻璃 */}
+      {/* 右侧操作面板 · Industrial 结构边框 */}
       <aside className="w-[272px] shrink-0 p-3">
-        <div className="flex h-full flex-col gap-5 rounded-[1.75rem] border border-white/[0.05] bg-white/[0.015] p-[3px] shadow-[0_12px_48px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]">
-          <div className="flex h-full flex-col gap-5 rounded-[calc(1.75rem-3px)] border border-white/[0.03] bg-[hsl(240,10%,3%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="flex h-full flex-col gap-5 border-2 border-foreground/10 bg-card p-3">
           <div className="space-y-5">
             <section>
               <p className="text-[10px] font-medium tracking-wider text-foreground-muted/40 uppercase">
@@ -167,39 +166,38 @@ export function PreviewStep() {
                 </div>
               </section>
 
-              {/* 导出按钮 — Button-in-Button */}
+              {/* 导出按钮 */}
               <div className="space-y-2">
                 <Button
                   onClick={downloadPDF}
                   disabled={exporting}
-                  className="group w-full h-10 rounded-full bg-primary shadow-[0_0_20px_var(--primary-glow)]"
+                  className="group w-full h-10 bg-primary"
                 >
-                  <span className="flex items-center justify-center rounded-full bg-white/20 p-1 transition-all duration-300 group-hover:scale-105" style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
+                  <span className="flex items-center justify-center bg-foreground/10 p-1 transition-all duration-300 group-hover:scale-105" style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
                     <DownloadSimple size={14} weight="light" />
                   </span>
                   <span className="ml-2 text-sm font-medium">
-                    {exporting ? "导出中..." : "下载 PDF"}
+                    {exporting ? "EXPORTING..." : "DOWNLOAD PDF"}
                   </span>
                 </Button>
                 <Button
                   variant="outline"
                   onClick={printPDF}
-                  className="w-full rounded-full"
+                  className="w-full"
                 >
                   <Printer size={15} weight="light" className="mr-1.5" />
                   浏览器打印
                 </Button>
               </div>
 
-              <section className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-3">
+              <section className="border border-[hsl(var(--divider))] bg-card p-3">
                 <p className="text-xs leading-5 text-foreground-muted">
-                  下载 PDF 为 A4 尺寸高质量文件。打印选项请在弹窗中选择 A4、缩放 100%。
+                  DOWNLOAD PDF 为 A4 尺寸高质量文件。打印选项请在弹窗中选择 A4、缩放 100%。
                 </p>
               </section>
             </div>
           </div>
-        </div>
-      </aside>
+        </aside>
     </div>
   );
 }

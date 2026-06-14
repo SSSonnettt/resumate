@@ -1,0 +1,65 @@
+/* ======== Swiss Industrial Print · 色彩系统 ======== */
+:root {
+  /* ======== 基底 · 哑光未漂白文档纸 ======== */
+  --background: 48 15% 95%;
+  --foreground: 0 0% 4%;
+  --foreground-dim: 0 0% 18%;
+  --foreground-muted: 0 0% 35%;
+
+  /* ======== 卡片 / 面板 ======== */
+  --card: 40 10% 93%;
+  --card-rgb: 240 238 228;
+  --card-foreground: 0 0% 4%;
+
+  --popover: 48 15% 96%;
+  --popover-foreground: 0 0% 4%;
+
+  /* ======== 主色 · 碳墨黑（替代金色） ======== */
+  --primary: 0 0% 4%;
+  --primary-foreground: 48 15% 95%;
+  --primary-glow: 0 0% 4% / 0;
+  --primary-glow-strong: 0 0% 4% / 0;
+  --primary-glass: 0 0% 4% / 0.04;
+
+  /* ======== 辅助色 · 中性灰 ======== */
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 48 15% 95%;
+  --secondary-glow: 0 0% 0 / 0;
+
+  /* ======== Accent · 航空红（唯一强调色） ======== */
+  --accent: 0 92% 55%;
+  --accent-foreground: 48 15% 95%;
+  --accent-glow: 0 92% 55% / 0;
+
+  /* ======== 中性区 ======== */
+  --muted: 40 8% 88%;
+  --muted-foreground: 0 0% 35%;
+
+  --destructive: 0 92% 55%;
+  --destructive-foreground: 48 15% 95%;
+
+  /* ======== 边框系统 · 可见结构线 ======== */
+  --border: 0 0% 4% / 0.12;
+  --border-hover: 0 0% 4% / 0.25;
+  --border-active: 0 92% 55% / 0.6;
+  --hairline: 0 0% 4% / 0.06;
+
+  --input: 0 0% 4% / 0.08;
+  --input-focus: 0 92% 55% / 0.4;
+
+  --ring: 0 0% 4% / 0.2;
+
+  /* ======== 分隔线 ======== */
+  --divider: 0 0% 4% / 0.1;
+  --divider-strong: 0 0% 4% / 0.2;
+
+  /* ======== Sidebar ======== */
+  --sidebar-background: 40 10% 91%;
+  --sidebar-foreground: 0 0% 12%;
+  --sidebar-primary: 0 0% 4%;
+  --sidebar-primary-foreground: 48 15% 95%;
+  --sidebar-accent: 40 8% 87%;
+  --sidebar-accent-foreground: 0 0% 4%;
+  --sidebar-border: 0 0% 4% / 0.08;
+  --sidebar-ring: 0 0% 4% / 0.15;
+}

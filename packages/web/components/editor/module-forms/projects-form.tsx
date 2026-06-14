@@ -33,7 +33,7 @@ export function ProjectsForm({ data, onChange }: Props) {
         <button
           type="button"
           onClick={addItem}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/[0.06]"
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-primary transition-colors hover:bg-foreground/5"
         >
           <Plus size={12} weight="light" />
           添加项目
@@ -41,7 +41,7 @@ export function ProjectsForm({ data, onChange }: Props) {
       </div>
       <div className="space-y-3">
         {items.map((item, index) => (
-          <div key={index} className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3">
+          <div key={index} className="border border-foreground/10 bg-card p-3">
             <div className="mb-2 flex items-center gap-2">
               <DotsSixVertical size={14} weight="light" className="shrink-0 text-foreground-muted/30" />
               <span className="text-xs font-medium text-foreground-dim">项目 {index + 1}</span>
@@ -49,7 +49,7 @@ export function ProjectsForm({ data, onChange }: Props) {
               <button
                 type="button"
                 onClick={() => removeItem(index)}
-                className="rounded-lg p-1 text-foreground-muted/30 transition-colors hover:bg-destructive/[0.06] hover:text-destructive"
+                className="p-1 text-foreground-muted/30 transition-colors hover:bg-destructive/[0.06] hover:text-destructive"
               >
                 <Trash size={14} weight="light" />
               </button>
@@ -62,7 +62,7 @@ export function ProjectsForm({ data, onChange }: Props) {
                   value={item.name}
                   onChange={(e) => updateItem(index, { name: e.target.value })}
                   placeholder="电商平台重构"
-                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-primary/25"
+                  className="w-full border border-foreground/10 bg-card px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-accent"
                 />
               </div>
               <div>
@@ -72,7 +72,7 @@ export function ProjectsForm({ data, onChange }: Props) {
                   value={item.url ?? ""}
                   onChange={(e) => updateItem(index, { url: e.target.value || undefined })}
                   placeholder="https://github.com/..."
-                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-primary/25"
+                  className="w-full border border-foreground/10 bg-card px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-accent"
                 />
               </div>
               <div>
@@ -82,7 +82,7 @@ export function ProjectsForm({ data, onChange }: Props) {
                   onChange={(e) => updateItem(index, { description: e.target.value })}
                   placeholder="负责前端架构设计..."
                   rows={2}
-                  className="w-full resize-y rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-sm leading-6 outline-none transition-colors focus:border-primary/25"
+                  className="w-full resize-y border border-foreground/10 bg-card px-2.5 py-1.5 text-sm leading-6 outline-none transition-colors focus:border-accent"
                 />
               </div>
               <div>
@@ -99,14 +99,14 @@ export function ProjectsForm({ data, onChange }: Props) {
                     })
                   }
                   placeholder="React, TypeScript, Node.js"
-                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-primary/25"
+                  className="w-full border border-foreground/10 bg-card px-2.5 py-1.5 text-sm outline-none transition-colors focus:border-accent"
                 />
               </div>
             </div>
           </div>
         ))}
         {items.length === 0 && (
-          <p className="rounded-xl border border-dashed border-white/[0.06] bg-white/[0.01] px-3 py-6 text-center text-sm text-foreground-muted">
+          <p className="border border-dashed border-foreground/10 bg-card px-3 py-6 text-center text-sm text-foreground-muted">
             暂无项目经历，点击上方按钮添加。
           </p>
         )}

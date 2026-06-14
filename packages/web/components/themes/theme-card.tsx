@@ -17,10 +17,10 @@ export const ThemeCard = memo(function ThemeCard({
   return (
     <button
       onClick={() => onSelect(theme.slug)}
-      className={`group relative flex flex-col overflow-hidden rounded-xl border transition-all duration-200 ${
+      className={`group relative flex flex-col overflow-hidden border transition-all duration-200 ${
         isSelected
           ? "border-primary/40 bg-primary/[0.06] ring-1 ring-primary/20"
-          : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
+          : "border-[hsl(var(--border))] bg-card hover:border-[hsl(var(--border-hover))] hover:bg-foreground/5"
       }`}
     >
       {/* 预览图 */}
@@ -38,7 +38,7 @@ export const ThemeCard = memo(function ThemeCard({
 
       {/* 选中标记 */}
       {isSelected && (
-        <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white shadow-sm">
+        <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center bg-primary text-primary-foreground">
           <Check size={12} weight="bold" />
         </div>
       )}
@@ -53,7 +53,7 @@ export const ThemeCard = memo(function ThemeCard({
             {theme.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-foreground-dim"
+                className="bg-[hsl(var(--muted))] px-1.5 py-0.5 text-[10px] text-foreground-dim"
               >
                 {tag}
               </span>
